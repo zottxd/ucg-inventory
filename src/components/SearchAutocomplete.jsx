@@ -45,7 +45,8 @@ export default function SearchAutocomplete({
       }
       const m = normalized.filter(l=> l.name.toLowerCase().includes(q)).slice(0,20)
       setMatches(m)
-      setOpen(matches.length > 0)
+      // Открываем список только когда есть текст и найдены совпадения
+      setOpen(m.length > 0)
       setActive(0)
     },200)
     return ()=>clearTimeout(handle)
@@ -93,12 +94,8 @@ export default function SearchAutocomplete({
         <input
           value={value}
           onChange={e=>onChange && onChange(e.target.value)}
-          onFocus={() => {
-            // Открываем только если есть matches и не идет выбор
-            if (matches.length > 0 && !isSelecting.current) {
-              setOpen(true)
-            }
-          }}
+          onClick={() => { if (matches.length > 0 && !isSelecting.current) setOpen(true) }}
+          // Не открываем на focus — открытие происходит только при вводе (useEffect)
           // УБРАЛИ onBlur чтобы не было конфликта с кликом
           placeholder={placeholder}
           className="flex-1 outline-none"
