@@ -19,11 +19,21 @@ export default function SearchAutocomplete({
   const [open, setOpen] = useState(false)
   const [matches, setMatches] = useState([])
   const [active, setActive] = useState(0)
+  const [isFocused, setIsFocused] = useState(false)
   const ref = useRef(null)
   const isSelecting = useRef(false) // Флаг: идет ли выбор элемента
 
   useEffect(() => {
     function handleClickOutside(event) {
+      // Игнорируем клики по элементам, помеченным как игнорируемые для автокомплита (например, табы)
+      try {
+        if (event.target && event.target.closest && event.target.closest('[data-ignore-autocomplete="true"]')) {
+          return
+        }
+      } catch (err) {
+        // ignore
+      }
+
       if (ref.current && !ref.current.contains(event.target)) {
         setOpen(false)
       }
@@ -45,12 +55,16 @@ export default function SearchAutocomplete({
       }
       const m = normalized.filter(l=> l.name.toLowerCase().includes(q)).slice(0,20)
       setMatches(m)
-      // Открываем список только когда есть текст и найдены совпадения
-      setOpen(m.length > 0)
+      // Открываем список ТОЛЬКО если пользователь реально взаимодействует с полем (isFocused)
+      if (m.length > 0 && isFocused) {
+        setOpen(true)
+      } else {
+        setOpen(false)
+      }
       setActive(0)
-    },200)
+    },150)
     return ()=>clearTimeout(handle)
-  },[value, normalized])
+  },[value, normalized, isFocused])
 
   useEffect(()=>{
     function onKey(e){
@@ -74,14 +88,15 @@ export default function SearchAutocomplete({
 
   function select(item){
     isSelecting.current = true // Устанавливаем флаг
-    
+
     if (onSelect) onSelect(item)
-    
-    // Закрываем и очищаем СРАЗУ
+
+    // Сбрасываем фокус и закрываем
+    setIsFocused(false)
     setOpen(false)
     setMatches([])
     setActive(0)
-    
+
     // Сбрасываем флаг через небольшую задержку
     setTimeout(() => {
       isSelecting.current = false
@@ -93,10 +108,16 @@ export default function SearchAutocomplete({
       <div className="flex items-center bg-white px-3 py-2 rounded shadow">
         <input
           value={value}
-          onChange={e=>onChange && onChange(e.target.value)}
+          onChange={e=>{ setIsFocused(true); onChange && onChange(e.target.value) }}
           onClick={() => { if (matches.length > 0 && !isSelecting.current) setOpen(true) }}
-          // Не открываем на focus — открытие происходит только при вводе (useEffect)
-          // УБРАЛИ onBlur чтобы не было конфликта с кликом
+          onFocus={() => { setIsFocused(true); if (matches.length > 0) setOpen(true) }}
+          onBlur={() => {
+            // Небольшая задержка чтобы успеть обработать клик по элементу списка
+            setTimeout(() => {
+              setIsFocused(false)
+              setOpen(false)
+            }, 150)
+          }}
           placeholder={placeholder}
           className="flex-1 outline-none"
         />

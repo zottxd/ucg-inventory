@@ -528,7 +528,7 @@ export default function AdminPanel(){
               ) : (
                 <div>
                   {/* Tabs switcher */}
-                  <div className="flex gap-2 mb-4">
+                  <div className="flex gap-2 mb-4" data-ignore-autocomplete="true">
                     <button
                       onClick={(e) => { e.stopPropagation(); setActiveTab('it'); setShowLocationDropdown(false); }}
                       onMouseDown={(e) => e.preventDefault()}

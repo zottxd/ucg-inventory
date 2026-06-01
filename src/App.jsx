@@ -350,7 +350,7 @@ function App(){
 
                   {/* Табы: показываем только активную таблицу */}
                   <div>
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex gap-2 mb-4" data-ignore-autocomplete="true">
                       <button
                         onClick={(e) => { e.stopPropagation(); setActiveTab('it'); try { document.activeElement && document.activeElement.blur(); } catch{} }}
                         onMouseDown={(e) => e.preventDefault()}
