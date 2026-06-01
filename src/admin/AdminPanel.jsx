@@ -530,7 +530,7 @@ export default function AdminPanel(){
                   {/* Tabs switcher */}
                   <div className="flex gap-2 mb-4">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setActiveTab('it') }}
+                      onClick={(e) => { e.stopPropagation(); setActiveTab('it'); setShowLocationDropdown(false); }}
                       onMouseDown={(e) => e.preventDefault()}
                       className={`px-4 py-2 rounded font-medium transition ${
                         activeTab === 'it'
@@ -541,7 +541,7 @@ export default function AdminPanel(){
                       💻 IT ТЕХНИКА
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setActiveTab('equipment') }}
+                      onClick={(e) => { e.stopPropagation(); setActiveTab('equipment'); setShowLocationDropdown(false); }}
                       onMouseDown={(e) => e.preventDefault()}
                       className={`px-4 py-2 rounded font-medium transition ${
                         activeTab === 'equipment'

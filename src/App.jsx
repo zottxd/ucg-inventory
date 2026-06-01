@@ -352,7 +352,7 @@ function App(){
                   <div>
                     <div className="flex gap-2 mb-4">
                       <button
-                        onClick={(e) => { e.stopPropagation(); setActiveTab('it') }}
+                        onClick={(e) => { e.stopPropagation(); setActiveTab('it'); try { document.activeElement && document.activeElement.blur(); } catch{} }}
                         onMouseDown={(e) => e.preventDefault()}
                         className={`px-4 py-2 rounded font-medium transition ${
                           activeTab === 'it'
@@ -363,7 +363,7 @@ function App(){
                         💻 IT ТЕХНИКА
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); setActiveTab('equipment') }}
+                        onClick={(e) => { e.stopPropagation(); setActiveTab('equipment'); try { document.activeElement && document.activeElement.blur(); } catch{} }}
                         onMouseDown={(e) => e.preventDefault()}
                         className={`px-4 py-2 rounded font-medium transition ${
                           activeTab === 'equipment'
