@@ -529,21 +529,23 @@ export default function AdminPanel(){
                 <div>
                   {/* Tabs switcher */}
                   <div className="flex gap-2 mb-4">
-                    <button 
-                      onClick={() => setActiveTab('it')}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActiveTab('it') }}
+                      onMouseDown={(e) => e.preventDefault()}
                       className={`px-4 py-2 rounded font-medium transition ${
-                        activeTab === 'it' 
-                          ? 'bg-blue-600 text-white' 
+                        activeTab === 'it'
+                          ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
                       💻 IT ТЕХНИКА
                     </button>
-                    <button 
-                      onClick={() => setActiveTab('equipment')}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActiveTab('equipment') }}
+                      onMouseDown={(e) => e.preventDefault()}
                       className={`px-4 py-2 rounded font-medium transition ${
-                        activeTab === 'equipment' 
-                          ? 'bg-green-600 text-white' 
+                        activeTab === 'equipment'
+                          ? 'bg-green-600 text-white'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
