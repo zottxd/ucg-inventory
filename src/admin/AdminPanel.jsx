@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase'
 
 // Списки категорий для разделения техники
@@ -30,13 +30,25 @@ export default function AdminPanel(){
 
   const [editLocation, setEditLocation] = useState(null)
   const [locationSearch, setLocationSearch] = useState('')
-  const [showLocationList, setShowLocationList] = useState(false)
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false)
+  const locationDropdownRef = useRef(null)
 
   const [loadingLocations, setLoadingLocations] = useState(false)
   const [loadingAssets, setLoadingAssets] = useState(false)
   const [saving, setSaving] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+        setShowLocationDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Фильтрация списка объектов для поиска
   // Загрузка списка объектов при старте
@@ -423,22 +435,22 @@ export default function AdminPanel(){
           
           {/* Выбор объекта - AUTOCOMPLETE */}
           <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
+            <div className="relative flex-1" ref={locationDropdownRef}>
               <input
                 type="text"
                 placeholder="🔍 Поиск объекта..."
                 value={locationSearch}
                 onChange={(e) => {
                   setLocationSearch(e.target.value)
-                  setShowLocationList(true)
+                  setShowLocationDropdown(true)
                 }}
-                onFocus={() => setShowLocationList(true)}
-                onBlur={() => setTimeout(() => setShowLocationList(false), 200)}
+                onFocus={() => setShowLocationDropdown(true)}
+                onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
                 className="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:outline-none transition"
               />
               
               {/* Dropdown list */}
-              {showLocationList && (
+              {showLocationDropdown && (
                 <div className="absolute mt-1 max-h-60 overflow-y-auto rounded shadow-lg border border-gray-200 w-full bg-white z-50">
                   {locations
                     .filter(loc =>
@@ -451,7 +463,7 @@ export default function AdminPanel(){
                         onClick={() => {
                           setEditLocation(loc)
                           setLocationSearch(loc.name)
-                          setShowLocationList(false)
+                          setShowLocationDropdown(false)
                         }}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 transition"
                       >
