@@ -19,6 +19,7 @@ function App(){
   const [loadingLocations, setLoadingLocations] = useState(false)
   const [loadingAssets, setLoadingAssets] = useState(false)
   const [error, setError] = useState('')
+  const [activeTab, setActiveTab] = useState('it') // 'it' или 'equipment'
 
   const [user, setUser] = useState(null)
   const [userRole, setUserRole] = useState(null)
@@ -347,10 +348,42 @@ function App(){
                     </button>
                   </div>
 
-                  {/* Две таблицы: IT и Оборудование */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <EquipmentTable title="💻 IT ТЕХНИКА" rows={itRows} />
-                    <EquipmentTable title="🏭 ОБОРУДОВАНИЕ" rows={nonItRows} />
+                  {/* Табы: показываем только активную таблицу */}
+                  <div>
+                    <div className="flex gap-2 mb-4">
+                      <button 
+                        onClick={() => setActiveTab('it')}
+                        className={`px-4 py-2 rounded font-medium transition ${
+                          activeTab === 'it' 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        💻 IT ТЕХНИКА
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('equipment')}
+                        className={`px-4 py-2 rounded font-medium transition ${
+                          activeTab === 'equipment' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        🏭 ОБОРУДОВАНИЕ
+                      </button>
+                    </div>
+
+                    {activeTab === 'it' && (
+                      <div className="mb-4">
+                        <EquipmentTable title="💻 IT ТЕХНИКА" rows={itRows} />
+                      </div>
+                    )}
+
+                    {activeTab === 'equipment' && (
+                      <div className="mb-4">
+                        <EquipmentTable title="🏭 ОБОРУДОВАНИЕ" rows={nonItRows} />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
