@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --ucg-dark: #1A2B49;
+  --ucg-accent: #E65C00;
+}
+
+html,body,#root{
+  height:100%;
+}
+
+body{
+  @apply bg-gray-50 text-gray-900 font-sans;
+}
+
+.ucg-btn-accent{
+  background: var(--ucg-accent);
+}
+
+.ucg-sidebar{
+  background: var(--ucg-dark);
+}
+
+.ucg-active{
+  background: rgba(230,92,0,0.12);
+}

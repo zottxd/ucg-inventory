@@ -1,0 +1,9 @@
+админ - 5f93d8ff-dfd4-4d3b-b099-3a4a583359ac
+user - 1dfbf35a-1956-4a8e-bac4-83e14a930c66
+
+
+admin@inventory.app
+mega_2013_av
+
+user@inventory.app
+password

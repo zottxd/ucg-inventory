@@ -1,0 +1,147 @@
+import React, { useState } from 'react'
+import { supabase } from './supabase'
+
+export default function Auth({ onAuthSuccess }) {
+  const [mode, setMode] = useState('signin')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const resetFeedback = () => {
+    setError('')
+    setMessage('')
+  }
+
+  const handleSignIn = async (event) => {
+    event.preventDefault()
+    resetFeedback()
+    setLoading(true)
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password.trim(),
+    })
+
+    setLoading(false)
+
+    if (error) {
+      setError(error.message || 'Не удалось войти в систему')
+      return
+    }
+
+    if (data?.user) {
+      onAuthSuccess?.(data.user)
+    }
+  }
+
+  const handleSignUp = async (event) => {
+    event.preventDefault()
+    resetFeedback()
+    setLoading(true)
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: password.trim(),
+    })
+
+    setLoading(false)
+
+    if (error) {
+      setError(error.message || 'Не удалось зарегистрироваться')
+      return
+    }
+
+    if (data?.user) {
+      try {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          email: data.user.email,
+          role: 'user',
+        })
+      } catch (profileError) {
+        console.warn('Не удалось сохранить профиль пользователя:', profileError)
+      }
+    }
+
+    setMessage('Успешно! Проверьте почту для подтверждения входа.')
+    setMode('signin')
+  }
+
+  return (
+    <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg">
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-semibold text-slate-900">
+          {mode === 'signin' ? 'Вход в UCG' : 'Регистрация'}
+        </h1>
+        <p className="mt-2 text-sm text-slate-500">
+          {mode === 'signin'
+            ? 'Введите email и пароль для входа.'
+            : 'Создайте новый аккаунт.'}
+        </p>
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+      {message && (
+        <div className="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {message}
+        </div>
+      )}
+
+      <form onSubmit={mode === 'signin' ? handleSignIn : handleSignUp} className="space-y-4">
+        <label className="block">
+          <span className="text-sm text-slate-600">Email</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="mt-2 w-full rounded border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-sm text-slate-600">Пароль</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="mt-2 w-full rounded border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+          />
+        </label>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading
+            ? 'Обработка...'
+            : mode === 'signin'
+            ? 'Войти'
+            : 'Зарегистрироваться'}
+        </button>
+      </form>
+
+      <div className="mt-5 text-center text-sm text-slate-600">
+        {mode === 'signin' ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}{' '}
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === 'signin' ? 'signup' : 'signin')
+            resetFeedback()
+          }}
+          className="font-medium text-slate-900 underline"
+        >
+          {mode === 'signin' ? 'Зарегистрироваться' : 'Войти'}
+        </button>
+      </div>
+    </div>
+  )
+}
