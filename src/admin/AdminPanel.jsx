@@ -28,6 +28,9 @@ export default function AdminPanel(){
   const [newLoc, setNewLoc] = useState({name:'', address:'', id:''})
   const [confirm, setConfirm] = useState({open:false, loc:null})
 
+  // Active tab for tables: 'it' or 'equipment'
+  const [activeTab, setActiveTab] = useState('it') // 'it' или 'equipment'
+
   const [editLocation, setEditLocation] = useState(null)
   const [locationSearch, setLocationSearch] = useState('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
@@ -38,6 +41,7 @@ export default function AdminPanel(){
   const [saving, setSaving] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -522,192 +526,218 @@ export default function AdminPanel(){
               {loadingAssets ? (
                 <div className="p-8 text-center text-gray-600">Загрузка техники...</div>
               ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  
-                  {/* ТАБЛИЦА 1: IT ТЕХНИКА */}
-                  <div className="bg-white rounded-lg border shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
-                      <h3 className="font-semibold text-blue-800">💻 IT ТЕХНИКА</h3>
-                      <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                        <button 
-                          onClick={addItRow} 
-                          disabled={saving}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition disabled:opacity-50"
-                        >
-                          ➕ Добавить
-                        </button>
-                      </div>
-                    </div>
-
-                    {itAssets.length === 0 ? (
-                      <div className="p-8 text-center text-gray-500">Нет IT техники для этого объекта</div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                          <thead className="bg-gray-50">
-                            <tr className="text-left text-gray-600 border-b">
-                              <th className="px-3 py-2">Серийник *</th>
-                              <th className="px-3 py-2">Категория *</th>
-                              <th className="px-3 py-2">Модель</th>
-                              <th className="px-3 py-2 w-16">Кол-во</th>
-                              <th className="px-3 py-2">Примечание</th>
-                              <th className="px-3 py-2 w-10"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {itAssets.map(r => (
-                              <tr key={r.id} className="border-t hover:bg-gray-50">
-                                <td className="px-3 py-2">
-                                  <input 
-                                    value={r.serial || ''} 
-                                    onChange={e => handleCellChange('it', r.id, 'serial', e.target.value)} 
-                                    className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                    placeholder="DV-001"
-                                  />
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input 
-                                    type="text" 
-                                    required 
-                                    placeholder="Ноутбук" 
-                                    value={r.category || ''} 
-                                    onChange={e => handleCellChange('it', r.id, 'category', e.target.value)} 
-                                    className="border rounded px-2 py-1 w-36 focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                  />
-                                  <div className="text-[10px] text-gray-400 mt-0.5">IT: Ноутбук, ПК...</div>
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input 
-                                    value={r.model || ''} 
-                                    onChange={e => handleCellChange('it', r.id, 'model', e.target.value)} 
-                                    className="border rounded px-2 py-1 w-40 focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input 
-                                    type="number" 
-                                    min="1"
-                                    value={r.quantity || 1} 
-                                    onChange={e => handleCellChange('it', r.id, 'quantity', parseInt(e.target.value) || 1)} 
-                                    className="border rounded px-2 py-1 w-16 text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input 
-                                    value={r.notes || ''} 
-                                    onChange={e => handleCellChange('it', r.id, 'notes', e.target.value)} 
-                                    className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2 text-center">
-                                  <button 
-                                    onClick={() => deleteRow('it', r.id)} 
-                                    className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
-                                    title="Удалить строку"
-                                  >
-                                    🗑
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                <div>
+                  {/* Tabs switcher */}
+                  <div className="flex gap-2 mb-4">
+                    <button 
+                      onClick={() => setActiveTab('it')}
+                      className={`px-4 py-2 rounded font-medium transition ${
+                        activeTab === 'it' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      💻 IT ТЕХНИКА
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('equipment')}
+                      className={`px-4 py-2 rounded font-medium transition ${
+                        activeTab === 'equipment' 
+                          ? 'bg-green-600 text-white' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      🏭 ОБОРУДОВАНИЕ
+                    </button>
                   </div>
 
-                  {/* ТАБЛИЦА 2: ОБОРУДОВАНИЕ */}
-                  <div className="bg-white rounded-lg border shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
-                      <h3 className="font-semibold text-blue-800">🏭 ОБОРУДОВАНИЕ</h3>
-                      <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                        <button 
-                          onClick={addNonItRow} 
-                          disabled={saving}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition disabled:opacity-50"
-                        >
-                          ➕ Добавить
-                        </button>
+                  {/* IT tab */}
+                  {activeTab === 'it' && (
+                    <div className="bg-white rounded-lg border shadow-sm mb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
+                        <h3 className="font-semibold text-blue-800">💻 IT ТЕХНИКА</h3>
+                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                          <button 
+                            onClick={addItRow} 
+                            disabled={saving}
+                            className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition disabled:opacity-50"
+                          >
+                            ➕ Добавить
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    {nonItAssets.length === 0 ? (
-                      <div className="p-8 text-center text-gray-500">Нет оборудования для этого объекта</div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                          <thead className="bg-gray-50">
-                            <tr className="text-left text-gray-600 border-b">
-                              <th className="px-3 py-2">Серийник *</th>
-                              <th className="px-3 py-2">Категория *</th>
-                              <th className="px-3 py-2">Модель</th>
-                              <th className="px-3 py-2 w-16">Кол-во</th>
-                              <th className="px-3 py-2">Примечание</th>
-                              <th className="px-3 py-2 w-10"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {nonItAssets.map(r => (
-                              <tr key={r.id} className="border-t hover:bg-gray-50">
-                                <td className="px-3 py-2">
-                                  <input 
-                                    value={r.serial || ''} 
-                                    onChange={e => handleCellChange('eq', r.id, 'serial', e.target.value)} 
-                                    className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                    placeholder="FR-001"
-                                  />
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input 
-                                    type="text" 
-                                    required 
-                                    placeholder="Холодильник" 
-                                    value={r.category || ''} 
-                                    onChange={e => handleCellChange('eq', r.id, 'category', e.target.value)} 
-                                    className="border rounded px-2 py-1 w-36 focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                  />
-                                  <div className="text-[10px] text-gray-400 mt-0.5">Оборуд.: Стол, Стул...</div>
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input 
-                                    value={r.model || ''} 
-                                    onChange={e => handleCellChange('eq', r.id, 'model', e.target.value)} 
-                                    className="border rounded px-2 py-1 w-40 focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input 
-                                    type="number" 
-                                    min="1"
-                                    value={r.quantity || 1} 
-                                    onChange={e => handleCellChange('eq', r.id, 'quantity', parseInt(e.target.value) || 1)} 
-                                    className="border rounded px-2 py-1 w-16 text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2">
-                                  <input 
-                                    value={r.notes || ''} 
-                                    onChange={e => handleCellChange('eq', r.id, 'notes', e.target.value)} 
-                                    className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                  />
-                                </td>
-                                <td className="px-3 py-2 text-center">
-                                  <button 
-                                    onClick={() => deleteRow('eq', r.id)} 
-                                    className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
-                                    title="Удалить строку"
-                                  >
-                                    🗑
-                                  </button>
-                                </td>
+                      {itAssets.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">Нет IT техники для этого объекта</div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50">
+                              <tr className="text-left text-gray-600 border-b">
+                                <th className="px-3 py-2">Серийник *</th>
+                                <th className="px-3 py-2">Категория *</th>
+                                <th className="px-3 py-2">Модель</th>
+                                <th className="px-3 py-2 w-16">Кол-во</th>
+                                <th className="px-3 py-2">Примечание</th>
+                                <th className="px-3 py-2 w-10"></th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
+                            </thead>
+                            <tbody>
+                              {itAssets.map(r => (
+                                <tr key={r.id} className="border-t hover:bg-gray-50">
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      value={r.serial || ''} 
+                                      onChange={e => handleCellChange('it', r.id, 'serial', e.target.value)} 
+                                      className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      placeholder="DV-001"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      type="text" 
+                                      required 
+                                      placeholder="Ноутбук" 
+                                      value={r.category || ''} 
+                                      onChange={e => handleCellChange('it', r.id, 'category', e.target.value)} 
+                                      className="border rounded px-2 py-1 w-36 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                    />
+                                    <div className="text-[10px] text-gray-400 mt-0.5">IT: Ноутбук, ПК...</div>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      value={r.model || ''} 
+                                      onChange={e => handleCellChange('it', r.id, 'model', e.target.value)} 
+                                      className="border rounded px-2 py-1 w-40 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      type="number" 
+                                      min="1"
+                                      value={r.quantity || 1} 
+                                      onChange={e => handleCellChange('it', r.id, 'quantity', parseInt(e.target.value) || 1)} 
+                                      className="border rounded px-2 py-1 w-16 text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      value={r.notes || ''} 
+                                      onChange={e => handleCellChange('it', r.id, 'notes', e.target.value)} 
+                                      className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2 text-center">
+                                    <button 
+                                      onClick={() => deleteRow('it', r.id)} 
+                                      className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
+                                      title="Удалить строку"
+                                    >
+                                      🗑
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
+                  {/* Equipment tab */}
+                  {activeTab === 'equipment' && (
+                    <div className="bg-white rounded-lg border shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
+                        <h3 className="font-semibold text-blue-800">🏭 ОБОРУДОВАНИЕ</h3>
+                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                          <button 
+                            onClick={addNonItRow} 
+                            disabled={saving}
+                            className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition disabled:opacity-50"
+                          >
+                            ➕ Добавить
+                          </button>
+                        </div>
+                      </div>
+
+                      {nonItAssets.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">Нет оборудования для этого объекта</div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50">
+                              <tr className="text-left text-gray-600 border-b">
+                                <th className="px-3 py-2">Серийник *</th>
+                                <th className="px-3 py-2">Категория *</th>
+                                <th className="px-3 py-2">Модель</th>
+                                <th className="px-3 py-2 w-16">Кол-во</th>
+                                <th className="px-3 py-2">Примечание</th>
+                                <th className="px-3 py-2 w-10"></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {nonItAssets.map(r => (
+                                <tr key={r.id} className="border-t hover:bg-gray-50">
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      value={r.serial || ''} 
+                                      onChange={e => handleCellChange('eq', r.id, 'serial', e.target.value)} 
+                                      className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      placeholder="FR-001"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      type="text" 
+                                      required 
+                                      placeholder="Холодильник" 
+                                      value={r.category || ''} 
+                                      onChange={e => handleCellChange('eq', r.id, 'category', e.target.value)} 
+                                      className="border rounded px-2 py-1 w-36 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                    />
+                                    <div className="text-[10px] text-gray-400 mt-0.5">Оборуд.: Стол, Стул...</div>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      value={r.model || ''} 
+                                      onChange={e => handleCellChange('eq', r.id, 'model', e.target.value)} 
+                                      className="border rounded px-2 py-1 w-40 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      type="number" 
+                                      min="1"
+                                      value={r.quantity || 1} 
+                                      onChange={e => handleCellChange('eq', r.id, 'quantity', parseInt(e.target.value) || 1)} 
+                                      className="border rounded px-2 py-1 w-16 text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      value={r.notes || ''} 
+                                      onChange={e => handleCellChange('eq', r.id, 'notes', e.target.value)} 
+                                      className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2 text-center">
+                                    <button 
+                                      onClick={() => deleteRow('eq', r.id)} 
+                                      className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
+                                      title="Удалить строку"
+                                    >
+                                      🗑
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
