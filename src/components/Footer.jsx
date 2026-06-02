@@ -2,8 +2,8 @@ import React from 'react'
 
 export default function Footer(){
   return (
-    <footer className="bg-ucg-dark text-white mt-8">
-      <div className="max-w-[1200px] mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+    <footer className="bg-ucg-dark text-white py-8 px-4">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
           <h4 className="font-semibold">UCG</h4>
           <p className="text-sm text-white/80">Корпоративный инвентарь</p>

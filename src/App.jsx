@@ -341,8 +341,8 @@ function App(){
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header user={user} userRole={userRole} onLogout={handleLogout} />
         <main className="flex-1">
-          <div className="max-w-[900px] mx-auto p-6">
-            <div className="rounded-xl bg-red-50 p-8 shadow-sm border border-red-200">
+          <div className="max-w-[900px] mx-auto p-4 md:p-8">
+            <div className="rounded-xl bg-red-50 p-4 md:p-8 shadow-sm border border-red-200">
               <h2 className="text-2xl font-bold text-red-700">⛔ Доступ запрещен</h2>
               <p className="mt-4 text-red-600">
                 Только администраторы имеют доступ к этой странице.
@@ -383,8 +383,8 @@ function App(){
 
       <main className="flex-1">
         <Suspense fallback={pageSuspenseFallback}>
-          <div className="max-w-[1200px] mx-auto p-6">
-            <div className="bg-[#f8f9fa] p-8 rounded shadow-sm">
+          <div className="max-w-[1200px] mx-auto p-4 md:p-8">
+            <div className="bg-[#f8f9fa] p-4 md:p-8 rounded shadow-sm">
               
               {/* Компонент поиска */}
               <SearchAutocomplete

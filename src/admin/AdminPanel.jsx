@@ -426,7 +426,7 @@ export default function AdminPanel(){
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <main className="max-w-[1200px] mx-auto p-6">
+      <main className="max-w-[1200px] mx-auto p-4 md:p-8">
         <h1 className="text-2xl font-semibold mb-6 text-blue-800">⚙️ ПАНЕЛЬ АДМИНИСТРАТОРА</h1>
 
         {/* Сообщения о статусе */}
@@ -493,7 +493,7 @@ export default function AdminPanel(){
 
             <button 
               onClick={() => setShowAdd(true)}
-              className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
+              className="w-full md:w-auto px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
               disabled={saving}
             >
               ➕ Добавить
@@ -502,7 +502,7 @@ export default function AdminPanel(){
             {editLocation && (
               <button
                 onClick={() => setConfirm({open:true, loc: editLocation})}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                className="w-full md:w-auto px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
                 disabled={saving}
               >
                 🗑 Удалить
@@ -591,7 +591,7 @@ export default function AdminPanel(){
                                     <input 
                                       value={r.serial || ''} 
                                       onChange={e => handleCellChange('it', r.id, 'serial', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       placeholder="DV-001"
                                     />
                                   </td>
@@ -602,7 +602,7 @@ export default function AdminPanel(){
                                       placeholder="Ноутбук" 
                                       value={r.category || ''} 
                                       onChange={e => handleCellChange('it', r.id, 'category', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-36 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                     />
                                     <div className="text-[10px] text-gray-400 mt-0.5">IT: Ноутбук, ПК...</div>
                                   </td>
@@ -610,7 +610,7 @@ export default function AdminPanel(){
                                     <input 
                                       value={r.model || ''} 
                                       onChange={e => handleCellChange('it', r.id, 'model', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-40 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-40 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                     />
                                   </td>
                                   <td className="px-3 py-2">
@@ -619,14 +619,14 @@ export default function AdminPanel(){
                                       min="1"
                                       value={r.quantity || 1} 
                                       onChange={e => handleCellChange('it', r.id, 'quantity', parseInt(e.target.value) || 1)} 
-                                      className="border rounded px-2 py-1 w-16 text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                     />
                                   </td>
                                   <td className="px-3 py-2">
                                     <input 
                                       value={r.notes || ''} 
                                       onChange={e => handleCellChange('it', r.id, 'notes', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                     />
                                   </td>
                                   <td className="px-3 py-2 text-center">
@@ -685,7 +685,7 @@ export default function AdminPanel(){
                                     <input 
                                       value={r.serial || ''} 
                                       onChange={e => handleCellChange('eq', r.id, 'serial', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       placeholder="FR-001"
                                     />
                                   </td>
@@ -696,7 +696,7 @@ export default function AdminPanel(){
                                       placeholder="Холодильник" 
                                       value={r.category || ''} 
                                       onChange={e => handleCellChange('eq', r.id, 'category', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-36 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                     />
                                     <div className="text-[10px] text-gray-400 mt-0.5">Оборуд.: Стол, Стул...</div>
                                   </td>
@@ -704,7 +704,7 @@ export default function AdminPanel(){
                                     <input 
                                       value={r.model || ''} 
                                       onChange={e => handleCellChange('eq', r.id, 'model', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-40 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-40 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                     />
                                   </td>
                                   <td className="px-3 py-2">
@@ -713,14 +713,14 @@ export default function AdminPanel(){
                                       min="1"
                                       value={r.quantity || 1} 
                                       onChange={e => handleCellChange('eq', r.id, 'quantity', parseInt(e.target.value) || 1)} 
-                                      className="border rounded px-2 py-1 w-16 text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                     />
                                   </td>
                                   <td className="px-3 py-2">
                                     <input 
                                       value={r.notes || ''} 
                                       onChange={e => handleCellChange('eq', r.id, 'notes', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-32 focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                     />
                                   </td>
                                   <td className="px-3 py-2 text-center">
@@ -749,7 +749,7 @@ export default function AdminPanel(){
                   <button 
                     onClick={saveChanges} 
                     disabled={saving}
-                    className="px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="w-full md:w-auto px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {saving ? (
                       <>
