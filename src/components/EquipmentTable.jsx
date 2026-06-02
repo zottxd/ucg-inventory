@@ -1,6 +1,6 @@
 import React from 'react'
 
-const EquipmentTable = ({ rows, onEdit, onDelete }) => {
+const EquipmentTable = ({ rows }) => {
   const safeRows = Array.isArray(rows) ? rows : []
 
   return (
@@ -13,7 +13,6 @@ const EquipmentTable = ({ rows, onEdit, onDelete }) => {
             <th className="border p-2">Модель</th>
             <th className="border p-2">Количество</th>
             <th className="border p-2">Заметки</th>
-            <th className="border p-2">Действия</th>
           </tr>
         </thead>
         <tbody>
@@ -24,20 +23,6 @@ const EquipmentTable = ({ rows, onEdit, onDelete }) => {
               <td className="border p-2">{row?.model || '-'}</td>
               <td className="border p-2">{row?.quantity || 0}</td>
               <td className="border p-2">{row?.notes || '-'}</td>
-              <td className="border p-2">
-                <button
-                  onClick={() => onEdit?.(row)}
-                  className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
-                >
-                  ✏️
-                </button>
-                <button
-                  onClick={() => onDelete?.(row)}
-                  className="px-2 py-1 bg-red-500 text-white rounded"
-                >
-                  🗑️
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>
