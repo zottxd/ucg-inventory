@@ -345,125 +345,129 @@ export default function AdminPanel(){
     setInvalidRows([])
     setSaving(true)
 
+    console.log('=== НАЧАЛО СОХРАНЕНИЯ ===')
+    console.log('Редактируемый объект:', editLocation.id, editLocation.name)
+    console.log('IT assets до нормализации:', itAssets)
+    console.log('NonIT assets до нормализации:', nonItAssets)
+
     try {
-      const normalizedItAssets = itAssets.map(row => ({
-        ...row,
-        serial: String(row.serial || '').trim(),
-        category: String(row.category || '').trim(),
-        model: String(row.model || '').trim(),
-        notes: String(row.notes || '').trim(),
-        quantity: Number(row.quantity) || 1,
-        location_id: editLocation.id,
-      }))
+      // Разделяем новые и существующие строки ДО нормализации
+      const itNewRows = itAssets.filter(r => String(r.id).startsWith('new-'))
+      const itExistingRows = itAssets.filter(r => !String(r.id).startsWith('new-'))
+      
+      const eqNewRows = nonItAssets.filter(r => String(r.id).startsWith('new-'))
+      const eqExistingRows = nonItAssets.filter(r => !String(r.id).startsWith('new-'))
 
-      const normalizedNonItAssets = nonItAssets.map(row => ({
-        ...row,
-        serial: String(row.serial || '').trim(),
-        category: String(row.category || '').trim(),
-        model: String(row.model || '').trim(),
-        notes: String(row.notes || '').trim(),
-        quantity: Number(row.quantity) || 1,
-        location_id: editLocation.id,
-      }))
+      // Нормализуем для сохранения в БД (только нужные поля)
+      const itAssetsRows = [...itNewRows, ...itExistingRows].map(row => {
+        const normalized = {
+          serial: String(row.serial || '').trim(),
+          category: String(row.category || '').trim(),
+          model: String(row.model || '').trim(),
+          notes: String(row.notes || '').trim(),
+          quantity: Number(row.quantity) || 1,
+          location_id: Number(editLocation.id),
+        }
+        // Для существующих строк добавляем ID
+        if (!String(row.id).startsWith('new-')) {
+          normalized.id = Number(row.id)
+        }
+        return normalized
+      })
 
-      const invalidItIds = normalizedItAssets.filter(r => !r.serial).map(r => r.id)
-      const invalidEqIds = normalizedNonItAssets.filter(r => !r.serial).map(r => r.id)
+      const equipmentRows = [...eqNewRows, ...eqExistingRows].map(row => {
+        const normalized = {
+          serial: String(row.serial || '').trim(),
+          category: String(row.category || '').trim(),
+          model: String(row.model || '').trim(),
+          notes: String(row.notes || '').trim(),
+          quantity: Number(row.quantity) || 1,
+          location_id: Number(editLocation.id),
+        }
+        // Для существующих строк добавляем ID
+        if (!String(row.id).startsWith('new-')) {
+          normalized.id = Number(row.id)
+        }
+        return normalized
+      })
+
+      console.log('IT assets для сохранения:', itAssetsRows)
+      console.log('Equipment assets для сохранения:', equipmentRows)
+
+      // Валидация
+      const invalidItIds = itAssets.filter(r => !String(r.serial || '').trim()).map(r => r.id)
+      const invalidEqIds = nonItAssets.filter(r => !String(r.serial || '').trim()).map(r => r.id)
 
       if (invalidItIds.length > 0 || invalidEqIds.length > 0) {
         setInvalidRows([...invalidItIds, ...invalidEqIds])
         setErrorMessage('Заполните серийный номер у всех строк перед сохранением.')
         setSaving(false)
+        console.log('❌ Найдены пустые серийные номера:', invalidItIds, invalidEqIds)
         return
       }
 
-      // --- Сохранение IT техники ---
-      const itRowsToInsert = normalizedItAssets.filter(r => r.isNew)
-      const itRowsToUpdate = normalizedItAssets.filter(r => !r.isNew && !r.isNewDeleted)
-      
-      // Insert new IT rows
-      for(const row of itRowsToInsert){
-        const { data, error } = await supabase
+      // --- UPSERT IT техники ---
+      console.log('Сохраняю IT техники UPSERT...')
+      if (itAssetsRows.length > 0) {
+        const { data: savedIT, error: itError } = await supabase
           .from('it_assets')
-          .insert([{
-            serial: row.serial,
-            category: row.category,
-            model: row.model,
-            quantity: row.quantity,
-            notes: row.notes,
-            location_id: editLocation.id,
-          }])
+          .upsert(itAssetsRows, { onConflict: 'id' })
           .select()
-        if(error) throw error
-        // Обновляем ID новой строки на реальный из базы
-        if (data && data[0]) {
-          setItAssets(prev => prev.map(r => 
-            r.id === row.id ? {...r, id: data[0].id, isNew: false} : r
-          ))
+
+        console.log('Saved IT:', savedIT, 'Error:', itError)
+        
+        if (itError) {
+          console.error('IT save error:', itError)
+          setErrorMessage(`❌ Ошибка сохранения IT: ${itError.message}`)
+          setSaving(false)
+          return
+        }
+
+        if (savedIT) {
+          console.log(`✅ Сохранено IT техники: ${savedIT.length} строк`)
+          // Обновляем локальный state с данными из ответа
+          setItAssets(prev => {
+            const updated = prev.filter(r => String(r.id).startsWith('new-'))
+            return [...updated, ...savedIT]
+          })
         }
       }
 
-      // Update existing IT rows
-      for(const row of itRowsToUpdate){
-        const { error } = await supabase
-          .from('it_assets')
-          .update({
-            serial: row.serial,
-            category: row.category,
-            model: row.model,
-            quantity: row.quantity,
-            notes: row.notes,
-          })
-          .eq('id', row.id)
-        if(error) throw error
-      }
-
-      // --- Сохранение Оборудования ---
-      const eqRowsToInsert = normalizedNonItAssets.filter(r => r.isNew)
-      const eqRowsToUpdate = normalizedNonItAssets.filter(r => !r.isNew && !r.isNewDeleted)
-      
-      // Insert new Equipment rows
-      for(const row of eqRowsToInsert){
-        const { data, error } = await supabase
+      // --- UPSERT Оборудования ---
+      console.log('Сохраняю Оборудование UPSERT...')
+      if (equipmentRows.length > 0) {
+        const { data: savedEq, error: eqError } = await supabase
           .from('equipment_assets')
-          .insert([{
-            serial: row.serial,
-            category: row.category,
-            model: row.model,
-            quantity: row.quantity,
-            notes: row.notes,
-            location_id: editLocation.id,
-          }])
+          .upsert(equipmentRows, { onConflict: 'id' })
           .select()
-        if(error) throw error
-        if (data && data[0]) {
-          setNonItAssets(prev => prev.map(r => 
-            r.id === row.id ? {...r, id: data[0].id, isNew: false} : r
-          ))
+
+        console.log('Saved Equipment:', savedEq, 'Error:', eqError)
+        
+        if (eqError) {
+          console.error('Equipment save error:', eqError)
+          setErrorMessage(`❌ Ошибка сохранения Оборудования: ${eqError.message}`)
+          setSaving(false)
+          return
+        }
+
+        if (savedEq) {
+          console.log(`✅ Сохранено Оборудования: ${savedEq.length} строк`)
+          // Обновляем локальный state с данными из ответа
+          setNonItAssets(prev => {
+            const updated = prev.filter(r => String(r.id).startsWith('new-'))
+            return [...updated, ...savedEq]
+          })
         }
       }
 
-      // Update existing Equipment rows
-      for(const row of eqRowsToUpdate){
-        const { error } = await supabase
-          .from('equipment_assets')
-          .update({
-            serial: row.serial,
-            category: row.category,
-            model: row.model,
-            quantity: row.quantity,
-            notes: row.notes,
-          })
-          .eq('id', row.id)
-        if(error) throw error
-      }
-
-      // Перезагружаем данные после сохранения
-      await loadAssets(editLocation.id)
+      console.log('✅ ВСЕ ДАННЫЕ УСПЕШНО СОХРАНЕНЫ')
       setStatusMessage('✅ Изменения сохранены')
+      console.log('=== КОНЕЦ СОХРАНЕНИЯ ===')
       
     } catch (error) {
-      console.error('Save error:', error)
+      console.error('❌ Save error:', error)
       setErrorMessage('❌ Ошибка сохранения: ' + (error.message || 'Неизвестная ошибка'))
+      console.log('=== КОНЕЦ СОХРАНЕНИЯ С ОШИБКОЙ ===')
     } finally {
       setSaving(false)
     }
