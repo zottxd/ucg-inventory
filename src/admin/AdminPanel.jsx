@@ -606,8 +606,7 @@ export default function AdminPanel(){
                   {activeTab === 'it' && (
                     <div className="bg-white rounded-lg border shadow-sm mb-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
-                        <h3 className="font-semibold text-blue-800">💻 IT ТЕХНИКА</h3>
-                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                        <div className="flex items-center gap-2">
                           <button 
                             onClick={addItRow} 
                             disabled={saving}
@@ -773,8 +772,7 @@ export default function AdminPanel(){
                   {activeTab === 'equipment' && (
                     <div className="bg-white rounded-lg border shadow-sm">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
-                        <h3 className="font-semibold text-blue-800">🏭 ОБОРУДОВАНИЕ</h3>
-                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                        <div className="flex items-center gap-2">
                           <button 
                             onClick={addNonItRow} 
                             disabled={saving}
