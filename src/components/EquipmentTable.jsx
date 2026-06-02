@@ -1,9 +1,10 @@
 import React from 'react'
 import { List } from 'react-window'
 
-function downloadCSV(rows, filename='export.csv'){
+function downloadCSV(rows = [], filename='export.csv'){
+  const safeRows = Array.isArray(rows) ? rows : []
   const header = ['Серийник','Категория','Модель','Кол-во','Примечание']
-  const csv = [header.join(',')].concat(rows.map(r => [r.serial || r.id, r.category, '"'+r.model+'"', r.quantity, '"'+(r.notes || '')+'"'].join(','))).join('\n')
+  const csv = [header.join(',')].concat(safeRows.map(r => [r?.serial || r?.id, r?.category, '"'+(r?.model || '')+'"', r?.quantity, '"'+(r?.notes || '')+'"'].join(','))).join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -14,18 +15,20 @@ function downloadCSV(rows, filename='export.csv'){
 }
 
 function EquipmentTable({ title, rows }){
-  const itemCount = rows.length
+  const safeRows = Array.isArray(rows) ? rows : []
+  const itemCount = safeRows.length
   const listHeight = Math.min(itemCount * 45, 500)
 
   const Row = ({ index, style, data }) => {
-    const row = data[index]
+    const row = data?.[index] || {}
+    console.log('EquipmentTable row:', row, typeof row)
     return (
       <div style={style} className="grid grid-cols-[2fr_2fr_2fr_1fr_1fr] items-center border-t bg-white text-sm">
-        <div className="px-3 py-2">{row.serial || row.id}</div>
-        <div className="px-3 py-2">{row.category}</div>
-        <div className="px-3 py-2">{row.model}</div>
-        <div className="px-3 py-2">{row.quantity}</div>
-        <div className="px-3 py-2">{row.notes}</div>
+        <div className="px-3 py-2">{row?.serial || row?.id}</div>
+        <div className="px-3 py-2">{row?.category}</div>
+        <div className="px-3 py-2">{row?.model}</div>
+        <div className="px-3 py-2">{row?.quantity}</div>
+        <div className="px-3 py-2">{row?.notes}</div>
       </div>
     )
   }
@@ -53,7 +56,7 @@ function EquipmentTable({ title, rows }){
             itemCount={itemCount}
             itemSize={45}
             width="100%"
-            itemData={rows}
+            itemData={safeRows}
           >
             {Row}
           </List>
