@@ -41,6 +41,7 @@ export default function AdminPanel(){
   const [saving, setSaving] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [invalidRows, setInvalidRows] = useState([])
   
 
   useEffect(() => {
@@ -127,6 +128,8 @@ export default function AdminPanel(){
         .from('it_assets')
         .select('*')
         .eq('location_id', locationId)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
       
       if(itError) throw itError
       
@@ -135,14 +138,23 @@ export default function AdminPanel(){
         .from('equipment_assets')
         .select('*')
         .eq('location_id', locationId)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
       
       if(eqError) throw eqError
       
-      setItAssets(itData || [])
-      setNonItAssets(eqData || [])
+      const cleanItData = (itData || []).filter(row => String(row?.serial || '').trim() !== '')
+      const cleanEqData = (eqData || []).filter(row => String(row?.serial || '').trim() !== '')
+
+      if ((itData?.length || 0) !== cleanItData.length || (eqData?.length || 0) !== cleanEqData.length) {
+        setStatusMessage('Скрыты пустые строки без серийного номера')
+      }
+
+      setItAssets(cleanItData)
+      setNonItAssets(cleanEqData)
       
-      console.log('IT assets loaded:', itData?.length || 0)
-      console.log('Equipment assets loaded:', eqData?.length || 0)
+      console.log('IT assets loaded:', cleanItData.length || 0)
+      console.log('Equipment assets loaded:', cleanEqData.length || 0)
     } catch (error) {
       console.error('Load assets error:', error)
       setErrorMessage('Не удалось загрузить технику')
@@ -239,14 +251,16 @@ export default function AdminPanel(){
 
   // Изменение ячейки в таблице
   const handleCellChange = useCallback((type, id, field, value) => {
+    const updateRow = row => row.id === id ? {...row, [field]: value} : row
+
     if (type === 'it') {
-      setItAssets(prev => prev.map(row => 
-        row.id === id ? {...row, [field]: value} : row
-      ))
+      setItAssets(prev => prev.map(updateRow))
     } else {
-      setNonItAssets(prev => prev.map(row => 
-        row.id === id ? {...row, [field]: value} : row
-      ))
+      setNonItAssets(prev => prev.map(updateRow))
+    }
+
+    if (field === 'serial' && String(value).trim() !== '') {
+      setInvalidRows(prev => prev.filter(item => item !== id))
     }
   }, [])
 
@@ -328,12 +342,43 @@ export default function AdminPanel(){
     
     setErrorMessage('')
     setStatusMessage('')
+    setInvalidRows([])
     setSaving(true)
 
     try {
+      const normalizedItAssets = itAssets.map(row => ({
+        ...row,
+        serial: String(row.serial || '').trim(),
+        category: String(row.category || '').trim(),
+        model: String(row.model || '').trim(),
+        notes: String(row.notes || '').trim(),
+        quantity: Number(row.quantity) || 1,
+        location_id: editLocation.id,
+      }))
+
+      const normalizedNonItAssets = nonItAssets.map(row => ({
+        ...row,
+        serial: String(row.serial || '').trim(),
+        category: String(row.category || '').trim(),
+        model: String(row.model || '').trim(),
+        notes: String(row.notes || '').trim(),
+        quantity: Number(row.quantity) || 1,
+        location_id: editLocation.id,
+      }))
+
+      const invalidItIds = normalizedItAssets.filter(r => !r.serial).map(r => r.id)
+      const invalidEqIds = normalizedNonItAssets.filter(r => !r.serial).map(r => r.id)
+
+      if (invalidItIds.length > 0 || invalidEqIds.length > 0) {
+        setInvalidRows([...invalidItIds, ...invalidEqIds])
+        setErrorMessage('Заполните серийный номер у всех строк перед сохранением.')
+        setSaving(false)
+        return
+      }
+
       // --- Сохранение IT техники ---
-      const itRowsToInsert = itAssets.filter(r => r.isNew)
-      const itRowsToUpdate = itAssets.filter(r => !r.isNew && !r.isNewDeleted)
+      const itRowsToInsert = normalizedItAssets.filter(r => r.isNew)
+      const itRowsToUpdate = normalizedItAssets.filter(r => !r.isNew && !r.isNewDeleted)
       
       // Insert new IT rows
       for(const row of itRowsToInsert){
@@ -373,8 +418,8 @@ export default function AdminPanel(){
       }
 
       // --- Сохранение Оборудования ---
-      const eqRowsToInsert = nonItAssets.filter(r => r.isNew)
-      const eqRowsToUpdate = nonItAssets.filter(r => !r.isNew && !r.isNewDeleted)
+      const eqRowsToInsert = normalizedNonItAssets.filter(r => r.isNew)
+      const eqRowsToUpdate = normalizedNonItAssets.filter(r => !r.isNew && !r.isNewDeleted)
       
       // Insert new Equipment rows
       for(const row of eqRowsToInsert){
@@ -591,7 +636,7 @@ export default function AdminPanel(){
                                     <input 
                                       value={r.serial || ''} 
                                       onChange={e => handleCellChange('it', r.id, 'serial', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
                                       placeholder="DV-001"
                                     />
                                   </td>
@@ -685,7 +730,7 @@ export default function AdminPanel(){
                                     <input 
                                       value={r.serial || ''} 
                                       onChange={e => handleCellChange('eq', r.id, 'serial', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
                                       placeholder="FR-001"
                                     />
                                   </td>

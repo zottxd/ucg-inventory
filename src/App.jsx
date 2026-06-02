@@ -300,6 +300,7 @@ function App(){
   }, [selectedLocation, loadAssets])
 
   const handleLocationSelect = useCallback((location) => {
+    assetsCache.current = {}
     setSelectedLocation(location)
     setQuery(location.name)
   }, [])

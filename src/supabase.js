@@ -10,6 +10,7 @@ export async function fetchPagedAssets(table, locationId, page = 0, pageSize = 2
     .from(table)
     .select('id, serial, category, model, quantity, notes, location_id, created_at', { count: 'exact' })
     .eq('location_id', locationId)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
     .range(page * pageSize, (page + 1) * pageSize - 1)
 }
