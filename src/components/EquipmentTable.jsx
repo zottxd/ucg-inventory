@@ -65,10 +65,7 @@ const EquipmentTable = ({ title, rows }) => {
   return (
     <div className="w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <p className="text-sm text-gray-500">{safeRows.length} записей</p>
-        </div>
+        <p className="text-sm text-gray-500">{safeRows.length} записей</p>
         <button
           onClick={() => downloadCSV(filteredRows, title?.replace(/\s+/g, '_') || 'export')}
           className="w-full md:w-auto px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
