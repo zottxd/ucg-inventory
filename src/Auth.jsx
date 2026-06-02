@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { supabase } from './supabase'
 
+const MAX_LOGIN_ATTEMPTS = 5
+const LOCK_DURATION = 60000 // 1 minute
+
 export default function Auth({ onAuthSuccess }) {
   const [mode, setMode] = useState('signin')
   const [email, setEmail] = useState('')
@@ -8,6 +11,8 @@ export default function Auth({ onAuthSuccess }) {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loginAttempts, setLoginAttempts] = useState(0)
+  const [lockUntil, setLockUntil] = useState(null)
 
   const resetFeedback = () => {
     setError('')
@@ -17,6 +22,13 @@ export default function Auth({ onAuthSuccess }) {
   const handleSignIn = async (event) => {
     event.preventDefault()
     resetFeedback()
+
+    if (lockUntil && Date.now() < lockUntil) {
+      const secondsRemaining = Math.ceil((lockUntil - Date.now()) / 1000)
+      setError(`Слишком много неудачных попыток. Подождите ${secondsRemaining} сек`)
+      return
+    }
+
     setLoading(true)
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -27,9 +39,23 @@ export default function Auth({ onAuthSuccess }) {
     setLoading(false)
 
     if (error) {
-      setError(error.message || 'Не удалось войти в систему')
+      const attempts = loginAttempts + 1
+      setLoginAttempts(attempts)
+      
+      if (attempts >= MAX_LOGIN_ATTEMPTS) {
+        setLockUntil(Date.now() + LOCK_DURATION)
+        setError(`Аккаунт заблокирован на ${LOCK_DURATION / 1000} сек из-за множественных неудачных попыток`)
+        setLoginAttempts(0)
+      } else {
+        const remaining = MAX_LOGIN_ATTEMPTS - attempts
+        setError(`${error.message || 'Не удалось войти в систему'}. Осталось попыток: ${remaining}`)
+      }
       return
     }
+
+    // Reset on successful login
+    setLoginAttempts(0)
+    setLockUntil(null)
 
     if (data?.user) {
       onAuthSuccess?.(data.user)

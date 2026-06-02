@@ -1,21 +1,51 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import SearchAutocomplete from './components/SearchAutocomplete'
-import EquipmentTable from './components/EquipmentTable'
-import AdminPanel from './admin/AdminPanel'
+import Skeleton from './components/Skeleton'
 import Auth from './Auth'
-import { supabase } from './supabase'
+import { supabase, fetchPagedAssets } from './supabase'
 
-// Списки категорий для разделения техники
-const IT_CATEGORIES = ['Ноутбук','Компьютер','Монитор','Принтер','Сканер','Телефон','Роутер','Сервер','Планшет']
-// Все остальные категории считаем "Оборудованием"
+const AdminPanel = lazy(() => import('./admin/AdminPanel'))
+const EquipmentTable = lazy(() => import('./components/EquipmentTable'))
+
+const PAGE_SIZE = 20
+const CACHE_KEY = 'ucg_locations_cache'
+const CACHE_TTL = 5 * 60 * 1000
+
+function getCachedLocations(){
+  if (typeof localStorage === 'undefined') return null
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (!cached) return null
+    const parsed = JSON.parse(cached)
+    if (!parsed?.data || !parsed?.timestamp) return null
+    if (Date.now() - parsed.timestamp > CACHE_TTL) return null
+    return parsed.data
+  } catch (err) {
+    return null
+  }
+}
+
+function setCachedLocations(data){
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }))
+  } catch (err) {
+    // ignore localStorage write failures
+  }
+}
 
 function App(){
   const [query, setQuery] = useState('')
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [locations, setLocations] = useState([])
-  const [assets, setAssets] = useState([])
+  const [itAssets, setItAssets] = useState([])
+  const [equipmentAssets, setEquipmentAssets] = useState([])
+  const [itCount, setItCount] = useState(0)
+  const [equipmentCount, setEquipmentCount] = useState(0)
+  const [page, setPage] = useState({ it: 0, equipment: 0 })
+  const assetsCache = useRef({})
   const [loadingLocations, setLoadingLocations] = useState(false)
   const [loadingAssets, setLoadingAssets] = useState(false)
   const [error, setError] = useState('')
@@ -142,11 +172,23 @@ function App(){
     return ()=> window.removeEventListener('hashchange', handleHash)
   },[])
 
+  useEffect(() => {
+    import('./admin/AdminPanel')
+    import('./components/EquipmentTable')
+  }, [])
+
   // Загрузка списка объектов (локаций) при старте
   useEffect(() => {
     async function loadLocations(){
       setLoadingLocations(true)
       setError('')
+      const cachedLocations = getCachedLocations()
+      if (cachedLocations && cachedLocations.length) {
+        setLocations(cachedLocations)
+        setLoadingLocations(false)
+        return
+      }
+
       try {
         const { data, error } = await supabase
           .from('locations')
@@ -155,6 +197,7 @@ function App(){
         
         if(error) throw error
         setLocations(data || [])
+        setCachedLocations(data || [])
       } catch (err) {
         console.error('Ошибка загрузки объектов:', err)
         setError('Не удалось загрузить список объектов')
@@ -165,77 +208,114 @@ function App(){
     loadLocations()
   }, [])
 
-  // Загрузка техники при выборе объекта
-  useEffect(() => {
-    async function loadAssets(locationId){
-      if (!locationId) {
-        setAssets([])
-        return
-      }
-      
-      setLoadingAssets(true)
-      setError('')
-      try {
-        // Load IT assets from it_assets table
-        const { data: itData, error: itError } = await supabase
-          .from('it_assets')
-          .select('*')
-          .eq('location_id', locationId)
-        
-        if(itError) throw itError
-        
-        // Load Equipment assets from equipment_assets table
-        const { data: eqData, error: eqError } = await supabase
-          .from('equipment_assets')
-          .select('*')
-          .eq('location_id', locationId)
-        
-        if(eqError) throw eqError
-        
-        // Merge both arrays for display
-        const allAssets = [...(itData || []), ...(eqData || [])]
-        setAssets(allAssets)
-        
-        console.log('IT assets loaded:', itData?.length || 0)
-        console.log('Equipment assets loaded:', eqData?.length || 0)
-        
-      } catch (err) {
-        console.error('Ошибка загрузки техники:', err)
-        setError('Не удалось загрузить технику для этого объекта')
-      } finally {
-        setLoadingAssets(false)
-      }
+  const fetchCachedPage = useCallback(async (type, locationId, pageIndex) => {
+    const cacheKey = `${type}:${locationId}:${pageIndex}`
+    if (assetsCache.current[cacheKey]) {
+      return assetsCache.current[cacheKey]
     }
 
-    if(selectedLocation?.id){
+    const table = type === 'it' ? 'it_assets' : 'equipment_assets'
+    const result = await fetchPagedAssets(table, locationId, pageIndex, PAGE_SIZE)
+    if (!result.error) {
+      assetsCache.current[cacheKey] = result
+    }
+    return result
+  }, [])
+
+  const loadAssets = useCallback(async (locationId) => {
+    if (!locationId) {
+      setItAssets([])
+      setEquipmentAssets([])
+      setItCount(0)
+      setEquipmentCount(0)
+      setPage({ it: 0, equipment: 0 })
+      return
+    }
+
+    setLoadingAssets(true)
+    setError('')
+
+    try {
+      const [itResult, equipmentResult] = await Promise.all([
+        fetchCachedPage('it', locationId, 0),
+        fetchCachedPage('equipment', locationId, 0),
+      ])
+
+      if (itResult.error) throw itResult.error
+      if (equipmentResult.error) throw equipmentResult.error
+
+      setItAssets(itResult.data ?? [])
+      setItCount(itResult.count ?? 0)
+      setEquipmentAssets(equipmentResult.data ?? [])
+      setEquipmentCount(equipmentResult.count ?? 0)
+      setPage({ it: 0, equipment: 0 })
+
+      console.log('IT assets loaded:', itResult.data?.length ?? 0)
+      console.log('Equipment assets loaded:', equipmentResult.data?.length ?? 0)
+    } catch (err) {
+      console.error('Ошибка загрузки техники:', err)
+      setError('Не удалось загрузить технику для этого объекта')
+    } finally {
+      setLoadingAssets(false)
+    }
+  }, [fetchCachedPage])
+
+  const loadAssetPage = useCallback(async (type, pageIndex) => {
+    if (!selectedLocation?.id) return
+
+    setLoadingAssets(true)
+    setError('')
+
+    try {
+      const result = await fetchCachedPage(type, selectedLocation.id, pageIndex)
+      if (result.error) throw result.error
+
+      if (type === 'it') {
+        setItAssets(result.data ?? [])
+        setItCount(result.count ?? 0)
+        setPage(prev => ({ ...prev, it: pageIndex }))
+      } else {
+        setEquipmentAssets(result.data ?? [])
+        setEquipmentCount(result.count ?? 0)
+        setPage(prev => ({ ...prev, equipment: pageIndex }))
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки страницы техники:', err)
+      setError('Не удалось загрузить технику для этого объекта')
+    } finally {
+      setLoadingAssets(false)
+    }
+  }, [fetchCachedPage, selectedLocation?.id])
+
+  useEffect(() => {
+    if (selectedLocation?.id) {
       loadAssets(selectedLocation.id)
     } else {
-      setAssets([])
+      setItAssets([])
+      setEquipmentAssets([])
+      setItCount(0)
+      setEquipmentCount(0)
+      setPage({ it: 0, equipment: 0 })
     }
-  }, [selectedLocation])
+  }, [selectedLocation, loadAssets])
 
-  // Обработчик выбора объекта из поиска
-  const handleLocationSelect = (location) => {
+  const handleLocationSelect = useCallback((location) => {
     setSelectedLocation(location)
-    setQuery(location.name) // Показываем имя выбранного объекта в поле поиска
-  }
+    setQuery(location.name)
+  }, [])
 
-  // Обработчик ввода в поиск (сброс выбора)
-  const handleQueryChange = (value) => {
+  const handleQueryChange = useCallback((value) => {
     setQuery(value)
     if (!value) setSelectedLocation(null)
-  }
+  }, [])
+
+  const pageSuspenseFallback = (
+    <Skeleton rows={10} cols={5} />
+  )
 
   // Фильтрация техники на IT и Не-IT
-  const itRows = useMemo(() => {
-    if(!selectedLocation) return []
-    return assets.filter(a => IT_CATEGORIES.includes(a.category))
-  }, [assets, selectedLocation])
-
-  const nonItRows = useMemo(() => {
-    if(!selectedLocation) return []
-    return assets.filter(a => !IT_CATEGORIES.includes(a.category))
-  }, [assets, selectedLocation])
+  const itRows = itAssets
+  const nonItRows = equipmentAssets
 
   if (authLoading) {
     return (
@@ -262,14 +342,14 @@ function App(){
         <Header user={user} userRole={userRole} onLogout={handleLogout} />
         <main className="flex-1">
           <div className="max-w-[900px] mx-auto p-6">
-            <div className="rounded-xl bg-white p-8 shadow-sm">
-              <h2 className="text-2xl font-semibold text-slate-900">Доступ запрещён</h2>
-              <p className="mt-4 text-slate-600">
-                Для просмотра этой страницы требуется роль администратора.
+            <div className="rounded-xl bg-red-50 p-8 shadow-sm border border-red-200">
+              <h2 className="text-2xl font-bold text-red-700">⛔ Доступ запрещен</h2>
+              <p className="mt-4 text-red-600">
+                Только администраторы имеют доступ к этой странице.
               </p>
               <a
                 href="#/"
-                className="mt-6 inline-flex rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                className="mt-6 inline-flex rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
               >
                 Вернуться в каталог
               </a>
@@ -281,19 +361,15 @@ function App(){
     )
   }
 
-  // Если открыта Админка — передаем туда данные и функции обновления
+  // Если открыта Админка и пользователь — админ
   if (isAdminView) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header user={user} userRole={userRole} onLogout={handleLogout} />
         <main className="flex-1">
-          <AdminPanel 
-            locations={locations} 
-            assets={assets} 
-            setAssets={setAssets}
-            selectedLocation={selectedLocation}
-            setSelectedLocation={setSelectedLocation}
-          />
+          <Suspense fallback={pageSuspenseFallback}>
+            <AdminPanel locations={locations} />
+          </Suspense>
         </main>
         <Footer />
       </div>
@@ -306,23 +382,24 @@ function App(){
       <Header user={user} userRole={userRole} onLogout={handleLogout} />
 
       <main className="flex-1">
-        <div className="max-w-[1200px] mx-auto p-6">
-          <div className="bg-[#f8f9fa] p-8 rounded shadow-sm">
-            
-            {/* Компонент поиска */}
-            <SearchAutocomplete
-              value={query}
-              onChange={handleQueryChange}
-              onSelect={handleLocationSelect}
-              locations={locations}
-              placeholder="Введите название объекта..."
-            />
+        <Suspense fallback={pageSuspenseFallback}>
+          <div className="max-w-[1200px] mx-auto p-6">
+            <div className="bg-[#f8f9fa] p-8 rounded shadow-sm">
+              
+              {/* Компонент поиска */}
+              <SearchAutocomplete
+                value={query}
+                onChange={handleQueryChange}
+                onSelect={handleLocationSelect}
+                locations={locations}
+                placeholder="Введите название объекта..."
+              />
 
             {/* Сообщения об ошибках и загрузке */}
             {error && <div className="mt-4 p-3 bg-red-50 text-red-700 rounded text-sm">{error}</div>}
             
             {loadingLocations && <div className="mt-4 text-sm text-gray-600">Загрузка объектов...</div>}
-            {loadingAssets && selectedLocation && <div className="mt-4 text-sm text-gray-600">Загрузка техники...</div>}
+            {loadingAssets && selectedLocation && <div className="mt-4 text-sm text-gray-600">Обновление данных...</div>}
 
             <div className="mt-6">
               {!selectedLocation ? (
@@ -377,13 +454,59 @@ function App(){
 
                     {activeTab === 'it' && (
                       <div className="mb-4">
-                        <EquipmentTable title="💻 IT ТЕХНИКА" rows={itRows} />
+                        {loadingAssets ? (
+                          <Skeleton rows={6} cols={5} />
+                        ) : (
+                          <EquipmentTable title="💻 IT ТЕХНИКА" rows={itRows} />
+                        )}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 mt-4">
+                          <button
+                            onClick={() => loadAssetPage('it', Math.max(0, page.it - 1))}
+                            disabled={page.it === 0}
+                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                          >
+                            ← Назад
+                          </button>
+                          <span className="px-3 py-1 text-sm text-gray-700">
+                            Страница {page.it + 1} из {Math.max(1, Math.ceil(itCount / PAGE_SIZE))}
+                          </span>
+                          <button
+                            onClick={() => loadAssetPage('it', page.it + 1)}
+                            disabled={(page.it + 1) * PAGE_SIZE >= itCount}
+                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                          >
+                            Вперёд →
+                          </button>
+                        </div>
                       </div>
                     )}
 
                     {activeTab === 'equipment' && (
                       <div className="mb-4">
-                        <EquipmentTable title="🏭 ОБОРУДОВАНИЕ" rows={nonItRows} />
+                        {loadingAssets ? (
+                          <Skeleton rows={6} cols={5} />
+                        ) : (
+                          <EquipmentTable title="🏭 ОБОРУДОВАНИЕ" rows={nonItRows} />
+                        )}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 mt-4">
+                          <button
+                            onClick={() => loadAssetPage('equipment', Math.max(0, page.equipment - 1))}
+                            disabled={page.equipment === 0}
+                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                          >
+                            ← Назад
+                          </button>
+                          <span className="px-3 py-1 text-sm text-gray-700">
+                            Страница {page.equipment + 1} из {Math.max(1, Math.ceil(equipmentCount / PAGE_SIZE))}
+                          </span>
+                          <button
+                            onClick={() => loadAssetPage('equipment', page.equipment + 1)}
+                            disabled={(page.equipment + 1) * PAGE_SIZE >= equipmentCount}
+                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                          >
+                            Вперёд →
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -392,6 +515,7 @@ function App(){
             </div>
           </div>
         </div>
+      </Suspense>
       </main>
 
       <Footer />

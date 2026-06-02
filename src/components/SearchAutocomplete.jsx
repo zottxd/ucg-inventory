@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 
 function highlight(text, q){
   if(!q) return text
@@ -14,7 +14,10 @@ export default function SearchAutocomplete({
   placeholder = 'Введите название объекта...',
   locations = [],
 }){
-  const normalized = locations.map(l => typeof l === 'string' ? { name: l, address: '' } : l)
+  const normalized = useMemo(
+    () => locations.map(l => typeof l === 'string' ? { name: l, address: '' } : l),
+    [locations]
+  )
 
   const [open, setOpen] = useState(false)
   const [matches, setMatches] = useState([])

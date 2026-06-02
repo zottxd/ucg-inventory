@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../supabase'
 
 // Списки категорий для разделения техники
@@ -228,17 +228,17 @@ export default function AdminPanel(){
     }
   }
 
-  function selectLocation(loc){
+  const selectLocation = useCallback((loc) => {
     console.log('Dropdown selected location:', loc?.id, loc?.name)
     if (!loc) {
       setEditLocation(null)
       return
     }
     setEditLocation(loc)
-  }
+  }, [])
 
   // Изменение ячейки в таблице
-  function handleCellChange(type, id, field, value){
+  const handleCellChange = useCallback((type, id, field, value) => {
     if (type === 'it') {
       setItAssets(prev => prev.map(row => 
         row.id === id ? {...row, [field]: value} : row
@@ -248,7 +248,7 @@ export default function AdminPanel(){
         row.id === id ? {...row, [field]: value} : row
       ))
     }
-  }
+  }, [])
 
   // Добавление строки в IT таблицу
   function addItRow(){

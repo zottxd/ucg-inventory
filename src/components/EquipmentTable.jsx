@@ -1,9 +1,10 @@
 import React from 'react'
+import { List } from 'react-window'
 
 function downloadCSV(rows, filename='export.csv'){
   const header = ['Серийник','Категория','Модель','Кол-во','Примечание']
-  const csv = [header.join(',')].concat(rows.map(r=>[r.serial||r.id, r.category, '"'+r.model+'"', r.quantity, '"'+(r.note||'')+'"'].join(','))).join('\n')
-  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'})
+  const csv = [header.join(',')].concat(rows.map(r => [r.serial || r.id, r.category, '"'+r.model+'"', r.quantity, '"'+(r.note || '')+'"'].join(','))).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -12,42 +13,54 @@ function downloadCSV(rows, filename='export.csv'){
   URL.revokeObjectURL(url)
 }
 
-export default function EquipmentTable({ title, rows }){
+function EquipmentTable({ title, rows }){
+  const itemCount = rows.length
+  const listHeight = Math.min(itemCount * 45, 500)
+
+  const Row = ({ index, style, data }) => {
+    const row = data[index]
+    return (
+      <div style={style} className="grid grid-cols-[2fr_2fr_2fr_1fr_1fr] items-center border-t bg-white text-sm">
+        <div className="px-3 py-2">{row.serial || row.id}</div>
+        <div className="px-3 py-2">{row.category}</div>
+        <div className="px-3 py-2">{row.model}</div>
+        <div className="px-3 py-2">{row.quantity}</div>
+        <div className="px-3 py-2">{row.note}</div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded shadow p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold">{title}</h3>
-        <button onClick={()=>downloadCSV(rows, title.replace(/\s+/g,'_')+'.csv')} className="text-sm px-3 py-1 bg-ucg-accent text-white rounded">📥 Скачать CSV</button>
+        <button onClick={() => downloadCSV(rows, title.replace(/\s+/g,'_') + '.csv')} className="text-sm px-3 py-1 bg-ucg-accent text-white rounded">📥 Скачать CSV</button>
       </div>
 
-      {rows.length === 0 ? (
+      {itemCount === 0 ? (
         <div className="p-6 text-gray-500">Нет данных для этого объекта</div>
       ) : (
-        <div className="overflow-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-600">
-                <th className="px-3 py-2">Серийник</th>
-                <th className="px-3 py-2">Категория</th>
-                <th className="px-3 py-2">Модель</th>
-                <th className="px-3 py-2">Кол-во</th>
-                <th className="px-3 py-2">Примечание</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r=> (
-                <tr key={r.id} className="border-t">
-                  <td className="px-3 py-2">{r.serial||r.id}</td>
-                  <td className="px-3 py-2">{r.category}</td>
-                  <td className="px-3 py-2">{r.model}</td>
-                  <td className="px-3 py-2">{r.quantity}</td>
-                  <td className="px-3 py-2">{r.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="overflow-hidden">
+          <div className="grid grid-cols-[2fr_2fr_2fr_1fr_1fr] text-left text-gray-600 text-sm border-b bg-slate-50">
+            <div className="px-3 py-2">Серийник</div>
+            <div className="px-3 py-2">Категория</div>
+            <div className="px-3 py-2">Модель</div>
+            <div className="px-3 py-2">Кол-во</div>
+            <div className="px-3 py-2">Примечание</div>
+          </div>
+          <List
+            height={listHeight}
+            itemCount={itemCount}
+            itemSize={45}
+            width="100%"
+            itemData={rows}
+          >
+            {Row}
+          </List>
         </div>
       )}
     </div>
   )
 }
+
+export default React.memo(EquipmentTable)
