@@ -28,7 +28,7 @@ for(let i=0;i<30;i++){
     category,
     model,
     quantity: Math.ceil(Math.random()*10),
-    note: Math.random() < 0.3 ? 'Требует ремонта' : '',
+    notes: Math.random() < 0.3 ? 'Требует ремонта' : '',
     location: loc
   })
 }

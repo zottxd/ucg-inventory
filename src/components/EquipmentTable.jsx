@@ -3,7 +3,7 @@ import { List } from 'react-window'
 
 function downloadCSV(rows, filename='export.csv'){
   const header = ['Серийник','Категория','Модель','Кол-во','Примечание']
-  const csv = [header.join(',')].concat(rows.map(r => [r.serial || r.id, r.category, '"'+r.model+'"', r.quantity, '"'+(r.note || '')+'"'].join(','))).join('\n')
+  const csv = [header.join(',')].concat(rows.map(r => [r.serial || r.id, r.category, '"'+r.model+'"', r.quantity, '"'+(r.notes || '')+'"'].join(','))).join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -25,7 +25,7 @@ function EquipmentTable({ title, rows }){
         <div className="px-3 py-2">{row.category}</div>
         <div className="px-3 py-2">{row.model}</div>
         <div className="px-3 py-2">{row.quantity}</div>
-        <div className="px-3 py-2">{row.note}</div>
+        <div className="px-3 py-2">{row.notes}</div>
       </div>
     )
   }
