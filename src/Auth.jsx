@@ -97,15 +97,9 @@ export default function Auth({ onAuthSuccess }) {
 
   return (
     <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg">
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">
-          {mode === 'signin' ? 'Вход в UCG' : 'Регистрация'}
-        </h1>
-        <p className="mt-2 text-sm text-slate-500">
-          {mode === 'signin'
-            ? 'Введите email и пароль для входа.'
-            : 'Создайте новый аккаунт.'}
-        </p>
+      <div className="text-center mb-6">
+        <h2 className="text-3xl font-bold text-gray-900">UCG Inventory</h2>
+        <p className="text-gray-600 mt-2">Корпоративная система учета техники</p>
       </div>
 
       {error && (
