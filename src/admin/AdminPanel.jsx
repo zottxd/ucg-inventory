@@ -483,7 +483,7 @@ export default function AdminPanel(){
           <h2 className="font-semibold text-lg mb-4">✏️ Редактор техники</h2>
           
           {/* Выбор объекта - AUTOCOMPLETE */}
-          <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center">
+          <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-6">
             <div className="relative flex-1" ref={locationDropdownRef}>
               <input
                 type="text"
@@ -617,77 +617,150 @@ export default function AdminPanel(){
                       {itAssets.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">Нет IT техники для этого объекта</div>
                       ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
-                              <tr className="text-left text-gray-600 border-b">
-                                <th className="px-3 py-2">Серийник *</th>
-                                <th className="px-3 py-2">Категория *</th>
-                                <th className="px-3 py-2">Модель</th>
-                                <th className="px-3 py-2 w-16">Кол-во</th>
-                                <th className="px-3 py-2">Примечание</th>
-                                <th className="px-3 py-2 w-10"></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {itAssets.map(r => (
-                                <tr key={r.id} className="border-t hover:bg-gray-50">
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      value={r.serial || ''} 
-                                      onChange={e => handleCellChange('it', r.id, 'serial', e.target.value)} 
-                                      className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
-                                      placeholder="DV-001"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      type="text" 
-                                      required 
-                                      placeholder="Ноутбук" 
-                                      value={r.category || ''} 
-                                      onChange={e => handleCellChange('it', r.id, 'category', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                    />
-                                    <div className="text-[10px] text-gray-400 mt-0.5">IT: Ноутбук, ПК...</div>
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      value={r.model || ''} 
-                                      onChange={e => handleCellChange('it', r.id, 'model', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-full md:w-40 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      type="number" 
+                        <>
+                          <div className="md:hidden space-y-4">
+                            {itAssets.map((r, index) => (
+                              <div key={r.id || index} className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteRow('it', r.id)}
+                                    className="text-red-500 p-2 rounded hover:bg-red-50"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Серийник *</label>
+                                  <input
+                                    type="text"
+                                    value={r.serial || ''}
+                                    onChange={(e) => handleCellChange('it', r.id, 'serial', e.target.value)}
+                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
+                                    placeholder="Введите серийный номер"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Категория *</label>
+                                  <input
+                                    type="text"
+                                    value={r.category || ''}
+                                    onChange={(e) => handleCellChange('it', r.id, 'category', e.target.value)}
+                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    placeholder="IT: Ноутбук, ПК..."
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Модель</label>
+                                  <input
+                                    type="text"
+                                    value={r.model || ''}
+                                    onChange={(e) => handleCellChange('it', r.id, 'model', e.target.value)}
+                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
+                                    <input
+                                      type="number"
                                       min="1"
-                                      value={r.quantity || 1} 
-                                      onChange={e => handleCellChange('it', r.id, 'quantity', parseInt(e.target.value) || 1)} 
-                                      className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      value={r.quantity || 1}
+                                      onChange={(e) => handleCellChange('it', r.id, 'quantity', parseInt(e.target.value) || 1)}
+                                      className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      value={r.notes || ''} 
-                                      onChange={e => handleCellChange('it', r.id, 'notes', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Примечание</label>
+                                    <input
+                                      type="text"
+                                      value={r.notes || ''}
+                                      onChange={(e) => handleCellChange('it', r.id, 'notes', e.target.value)}
+                                      className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
-                                  </td>
-                                  <td className="px-3 py-2 text-center">
-                                    <button 
-                                      onClick={() => deleteRow('it', r.id)} 
-                                      className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
-                                      title="Удалить строку"
-                                    >
-                                      🗑
-                                    </button>
-                                  </td>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-gray-50">
+                                <tr className="text-left text-gray-600 border-b">
+                                  <th className="px-3 py-2">Серийник *</th>
+                                  <th className="px-3 py-2">Категория *</th>
+                                  <th className="px-3 py-2">Модель</th>
+                                  <th className="px-3 py-2 w-16">Кол-во</th>
+                                  <th className="px-3 py-2">Примечание</th>
+                                  <th className="px-3 py-2 w-10"></th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                              </thead>
+                              <tbody>
+                                {itAssets.map(r => (
+                                  <tr key={r.id} className="border-t hover:bg-gray-50">
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        value={r.serial || ''} 
+                                        onChange={e => handleCellChange('it', r.id, 'serial', e.target.value)} 
+                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
+                                        placeholder="DV-001"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        type="text" 
+                                        required 
+                                        placeholder="Ноутбук" 
+                                        value={r.category || ''} 
+                                        onChange={e => handleCellChange('it', r.id, 'category', e.target.value)} 
+                                        className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      />
+                                      <div className="text-[10px] text-gray-400 mt-0.5">IT: Ноутбук, ПК...</div>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        value={r.model || ''} 
+                                        onChange={e => handleCellChange('it', r.id, 'model', e.target.value)} 
+                                        className="border rounded px-2 py-1 w-full md:w-40 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        type="number" 
+                                        min="1"
+                                        value={r.quantity || 1} 
+                                        onChange={e => handleCellChange('it', r.id, 'quantity', parseInt(e.target.value) || 1)} 
+                                        className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        value={r.notes || ''} 
+                                        onChange={e => handleCellChange('it', r.id, 'notes', e.target.value)} 
+                                        className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2 text-center">
+                                      <button 
+                                        onClick={() => deleteRow('it', r.id)} 
+                                        className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
+                                        title="Удалить строку"
+                                      >
+                                        🗑
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
                       )}
                     </div>
                   )}
@@ -711,77 +784,150 @@ export default function AdminPanel(){
                       {nonItAssets.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">Нет оборудования для этого объекта</div>
                       ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
-                              <tr className="text-left text-gray-600 border-b">
-                                <th className="px-3 py-2">Серийник *</th>
-                                <th className="px-3 py-2">Категория *</th>
-                                <th className="px-3 py-2">Модель</th>
-                                <th className="px-3 py-2 w-16">Кол-во</th>
-                                <th className="px-3 py-2">Примечание</th>
-                                <th className="px-3 py-2 w-10"></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {nonItAssets.map(r => (
-                                <tr key={r.id} className="border-t hover:bg-gray-50">
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      value={r.serial || ''} 
-                                      onChange={e => handleCellChange('eq', r.id, 'serial', e.target.value)} 
-                                      className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
-                                      placeholder="FR-001"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      type="text" 
-                                      required 
-                                      placeholder="Холодильник" 
-                                      value={r.category || ''} 
-                                      onChange={e => handleCellChange('eq', r.id, 'category', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                    />
-                                    <div className="text-[10px] text-gray-400 mt-0.5">Оборуд.: Стол, Стул...</div>
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      value={r.model || ''} 
-                                      onChange={e => handleCellChange('eq', r.id, 'model', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-full md:w-40 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      type="number" 
+                        <>
+                          <div className="md:hidden space-y-4">
+                            {nonItAssets.map((r, index) => (
+                              <div key={r.id || index} className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteRow('eq', r.id)}
+                                    className="text-red-500 p-2 rounded hover:bg-red-50"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Серийник *</label>
+                                  <input
+                                    type="text"
+                                    value={r.serial || ''}
+                                    onChange={(e) => handleCellChange('eq', r.id, 'serial', e.target.value)}
+                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
+                                    placeholder="Введите серийный номер"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Категория *</label>
+                                  <input
+                                    type="text"
+                                    value={r.category || ''}
+                                    onChange={(e) => handleCellChange('eq', r.id, 'category', e.target.value)}
+                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    placeholder="Оборуд.: Стол, Стул..."
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Модель</label>
+                                  <input
+                                    type="text"
+                                    value={r.model || ''}
+                                    onChange={(e) => handleCellChange('eq', r.id, 'model', e.target.value)}
+                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
+                                    <input
+                                      type="number"
                                       min="1"
-                                      value={r.quantity || 1} 
-                                      onChange={e => handleCellChange('eq', r.id, 'quantity', parseInt(e.target.value) || 1)} 
-                                      className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      value={r.quantity || 1}
+                                      onChange={(e) => handleCellChange('eq', r.id, 'quantity', parseInt(e.target.value) || 1)}
+                                      className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input 
-                                      value={r.notes || ''} 
-                                      onChange={e => handleCellChange('eq', r.id, 'notes', e.target.value)} 
-                                      className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Примечание</label>
+                                    <input
+                                      type="text"
+                                      value={r.notes || ''}
+                                      onChange={(e) => handleCellChange('eq', r.id, 'notes', e.target.value)}
+                                      className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     />
-                                  </td>
-                                  <td className="px-3 py-2 text-center">
-                                    <button 
-                                      onClick={() => deleteRow('eq', r.id)} 
-                                      className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
-                                      title="Удалить строку"
-                                    >
-                                      🗑
-                                    </button>
-                                  </td>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-gray-50">
+                                <tr className="text-left text-gray-600 border-b">
+                                  <th className="px-3 py-2">Серийник *</th>
+                                  <th className="px-3 py-2">Категория *</th>
+                                  <th className="px-3 py-2">Модель</th>
+                                  <th className="px-3 py-2 w-16">Кол-во</th>
+                                  <th className="px-3 py-2">Примечание</th>
+                                  <th className="px-3 py-2 w-10"></th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                              </thead>
+                              <tbody>
+                                {nonItAssets.map(r => (
+                                  <tr key={r.id} className="border-t hover:bg-gray-50">
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        value={r.serial || ''} 
+                                        onChange={e => handleCellChange('eq', r.id, 'serial', e.target.value)} 
+                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
+                                        placeholder="FR-001"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        type="text" 
+                                        required 
+                                        placeholder="Холодильник" 
+                                        value={r.category || ''} 
+                                        onChange={e => handleCellChange('eq', r.id, 'category', e.target.value)} 
+                                        className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      />
+                                      <div className="text-[10px] text-gray-400 mt-0.5">Оборуд.: Стол, Стул...</div>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        value={r.model || ''} 
+                                        onChange={e => handleCellChange('eq', r.id, 'model', e.target.value)} 
+                                        className="border rounded px-2 py-1 w-full md:w-40 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        type="number" 
+                                        min="1"
+                                        value={r.quantity || 1} 
+                                        onChange={e => handleCellChange('eq', r.id, 'quantity', parseInt(e.target.value) || 1)} 
+                                        className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <input 
+                                        value={r.notes || ''} 
+                                        onChange={e => handleCellChange('eq', r.id, 'notes', e.target.value)} 
+                                        className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2 text-center">
+                                      <button 
+                                        onClick={() => deleteRow('eq', r.id)} 
+                                        className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
+                                        title="Удалить строку"
+                                      >
+                                        🗑
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
                       )}
                     </div>
                   )}
@@ -790,11 +936,11 @@ export default function AdminPanel(){
 
               {/* Кнопка Сохранить (общая для обеих таблиц) */}
               {editLocation && (itAssets.length > 0 || nonItAssets.length > 0) && (
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6">
                   <button 
                     onClick={saveChanges} 
                     disabled={saving}
-                    className="w-full md:w-auto px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full md:w-auto sticky bottom-4 z-20 px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {saving ? (
                       <>
