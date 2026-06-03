@@ -42,7 +42,7 @@ export default function AdminPanel(){
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [invalidRows, setInvalidRows] = useState([])
-  
+  const [selectedImage, setSelectedImage] = useState(null) // State for full-size image modal
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -333,141 +333,229 @@ export default function AdminPanel(){
     }
   }
 
-  // Сохранение изменений в базу
-  async function saveChanges(){
-    if(!editLocation?.id) {
-      setErrorMessage('❌ Выберите объект для редактирования')
+  // Загрузка фото
+  const handlePhotoUpload = async (type, rowIndex, file) => {
+    if (!file) return
+    
+    const fileExt = file.name.split(".").pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    
+    const { data, error } = await supabase.storage
+      .from("equipment-photos")
+      .upload(fileName, file)
+    
+    if (error) {
+      console.error("Upload error:", error)
+      setErrorMessage(`❌ Ошибка загрузки фото: ${error.message}`)
       return
     }
     
-    setErrorMessage('')
-    setStatusMessage('')
-    setInvalidRows([])
+    const { data: { publicUrl } } = supabase.storage
+      .from("equipment-photos")
+      .getPublicUrl(fileName)
+    
+    // Определяем таблицу
+    const tableName = type === "it" ? "it_assets" : "equipment_assets"
+    const rows = type === "it" ? itAssets : nonItAssets // Use actual state variable names
+    const setRows = type === "it" ? setItAssets : setNonItAssets // Use actual state setter names
+    
+    const row = rows[rowIndex]
+    const { error: updateError } = await supabase
+      .from(tableName)
+      .update({ photo_url: publicUrl })
+      .eq("id", row.id)
+    
+    if (updateError) {
+      console.error("Update photo_url error:", updateError)
+      setErrorMessage(`❌ Ошибка обновления URL фото: ${updateError.message}`)
+      return
+    }
+
+    setRows(prev => {
+      const updated = [...prev]
+      updated[rowIndex] = { ...updated[rowIndex], photo_url: publicUrl }
+      return updated
+    })
+    setStatusMessage("✅ Фото успешно загружено")
+  }
+
+  // Удаление фото
+  const handlePhotoDelete = async (type, rowIndex, currentUrl) => {
+    if (!currentUrl) return
+    const fileName = currentUrl.split("/").pop()
+    
+    const { error: removeError } = await supabase.storage
+      .from("equipment-photos")
+      .remove([fileName])
+
+    if (removeError) {
+      console.error("Remove photo error:", removeError)
+      setErrorMessage(`❌ Ошибка удаления фото из хранилища: ${removeError.message}`)
+      return
+    }
+    
+    const tableName = type === "it" ? "it_assets" : "equipment_assets"
+    const rows = type === "it" ? itAssets : nonItAssets
+    const setRows = type === "it" ? setItAssets : setNonItAssets
+    
+    const row = rows[rowIndex]
+    const { error: updateError } = await supabase
+      .from(tableName)
+      .update({ photo_url: null })
+      .eq("id", row.id)
+    
+    if (updateError) {
+      console.error("Update photo_url to null error:", updateError)
+      setErrorMessage(`❌ Ошибка удаления URL фото из базы: ${updateError.message}`)
+      return
+    }
+
+    setRows(prev => {
+      const updated = [...prev]
+      updated[rowIndex] = { ...updated[rowIndex], photo_url: null }
+      return updated
+    })
+    setStatusMessage("✅ Фото успешно удалено")
+  }
+
+  // Сохранение изменений в базу
+  const handleSave = async () => {
+    if(!editLocation?.id) {
+      setErrorMessage("❌ Выберите объект для редактирования")
+      return
+    }
+    
     setSaving(true)
-
-    console.log('=== НАЧАЛО СОХРАНЕНИЯ ===')
-    console.log('Редактируемый объект:', editLocation.id, editLocation.name)
-    console.log('IT assets до нормализации:', itAssets)
-    console.log('NonIT assets до нормализации:', nonItAssets)
-
+    setErrorMessage(null)
+    setStatusMessage("")
+    setInvalidRows([])
+    
     try {
-      // Разделяем новые и существующие строки ДО нормализации
-      const itNewRows = itAssets.filter(r => String(r.id).startsWith('new-'))
-      const itExistingRows = itAssets.filter(r => !String(r.id).startsWith('new-'))
-      
-      const eqNewRows = nonItAssets.filter(r => String(r.id).startsWith('new-'))
-      const eqExistingRows = nonItAssets.filter(r => !String(r.id).startsWith('new-'))
-
-      // Нормализуем для сохранения в БД (только нужные поля)
-      const itAssetsRows = [...itNewRows, ...itExistingRows].map(row => {
-        const normalized = {
-          serial: String(row.serial || '').trim(),
-          category: String(row.category || '').trim(),
-          model: String(row.model || '').trim(),
-          notes: String(row.notes || '').trim(),
-          quantity: Number(row.quantity) || 1,
-          location_id: Number(editLocation.id),
-        }
-        // Для существующих строк добавляем ID
-        if (!String(row.id).startsWith('new-')) {
-          normalized.id = Number(row.id)
-        }
-        return normalized
-      })
-
-      const equipmentRows = [...eqNewRows, ...eqExistingRows].map(row => {
-        const normalized = {
-          serial: String(row.serial || '').trim(),
-          category: String(row.category || '').trim(),
-          model: String(row.model || '').trim(),
-          notes: String(row.notes || '').trim(),
-          quantity: Number(row.quantity) || 1,
-          location_id: Number(editLocation.id),
-        }
-        // Для существующих строк добавляем ID
-        if (!String(row.id).startsWith('new-')) {
-          normalized.id = Number(row.id)
-        }
-        return normalized
-      })
-
-      console.log('IT assets для сохранения:', itAssetsRows)
-      console.log('Equipment assets для сохранения:', equipmentRows)
-
-      // Валидация
-      const invalidItIds = itAssets.filter(r => !String(r.serial || '').trim()).map(r => r.id)
-      const invalidEqIds = nonItAssets.filter(r => !String(r.serial || '').trim()).map(r => r.id)
+      // Валидация перед сохранением
+      const invalidItIds = itAssets.filter(r => !String(r.serial || "").trim()).map(r => r.id)
+      const invalidEqIds = nonItAssets.filter(r => !String(r.serial || "").trim()).map(r => r.id)
 
       if (invalidItIds.length > 0 || invalidEqIds.length > 0) {
         setInvalidRows([...invalidItIds, ...invalidEqIds])
-        setErrorMessage('Заполните серийный номер у всех строк перед сохранением.')
+        setErrorMessage("Заполните серийный номер у всех строк перед сохранением.")
         setSaving(false)
-        console.log('❌ Найдены пустые серийные номера:', invalidItIds, invalidEqIds)
+        console.log("❌ Найдены пустые серийные номера:", invalidItIds, invalidEqIds)
         return
       }
 
-      // --- UPSERT IT техники ---
-      console.log('Сохраняю IT техники UPSERT...')
-      if (itAssetsRows.length > 0) {
-        const { data: savedIT, error: itError } = await supabase
-          .from('it_assets')
-          .upsert(itAssetsRows, { onConflict: 'id' })
-          .select()
-
-        console.log('Saved IT:', savedIT, 'Error:', itError)
+      // === IT ТЕХНИКА ===
+      const newITRows = itAssets.filter(row => !row.id || String(row.id).startsWith("new-"))
+      const existingITRows = itAssets.filter(row => row.id && !String(row.id).startsWith("new-"))
+      
+      let savedIT = []
+      
+      // Для НОВЫХ записей — INSERT без id
+      if (newITRows.length > 0) {
+        const newPayload = newITRows.map(row => ({
+          serial: (row.serial || "").trim(),
+          category: (row.category || "").trim(),
+          model: (row.model || "").trim(),
+          notes: (row.notes || "").trim(),
+          photo_url: row.photo_url || null,
+          quantity: Number(row.quantity) || 1,
+          location_id: Number(editLocation.id)
+          // id НЕ включаем!
+        }))
         
-        if (itError) {
-          console.error('IT save error:', itError)
-          setErrorMessage(`❌ Ошибка сохранения IT: ${itError.message}`)
-          setSaving(false)
-          return
-        }
-
-        if (savedIT) {
-          console.log(`✅ Сохранено IT техники: ${savedIT.length} строк`)
-          // Обновляем локальный state с данными из ответа
-          setItAssets(prev => {
-            const updated = prev.filter(r => String(r.id).startsWith('new-'))
-            return [...updated, ...savedIT]
-          })
-        }
-      }
-
-      // --- UPSERT Оборудования ---
-      console.log('Сохраняю Оборудование UPSERT...')
-      if (equipmentRows.length > 0) {
-        const { data: savedEq, error: eqError } = await supabase
-          .from('equipment_assets')
-          .upsert(equipmentRows, { onConflict: 'id' })
+        const { data: inserted, error: insertError } = await supabase
+          .from("it_assets")
+          .insert(newPayload)
           .select()
-
-        console.log('Saved Equipment:', savedEq, 'Error:', eqError)
         
-        if (eqError) {
-          console.error('Equipment save error:', eqError)
-          setErrorMessage(`❌ Ошибка сохранения Оборудования: ${eqError.message}`)
-          setSaving(false)
-          return
-        }
-
-        if (savedEq) {
-          console.log(`✅ Сохранено Оборудования: ${savedEq.length} строк`)
-          // Обновляем локальный state с данными из ответа
-          setNonItAssets(prev => {
-            const updated = prev.filter(r => String(r.id).startsWith('new-'))
-            return [...updated, ...savedEq]
-          })
-        }
+        if (insertError) throw insertError
+        savedIT = [...savedIT, ...inserted]
       }
-
-      console.log('✅ ВСЕ ДАННЫЕ УСПЕШНО СОХРАНЕНЫ')
-      setStatusMessage('✅ Изменения сохранены')
-      console.log('=== КОНЕЦ СОХРАНЕНИЯ ===')
+      
+      // Для СУЩЕСТВУЮЩИХ записей — UPDATE с id
+      if (existingITRows.length > 0) {
+        const updatePayload = existingITRows.map(row => ({
+          id: typeof row.id === "string" ? parseInt(row.id) : row.id,
+          serial: (row.serial || "").trim(),
+          category: (row.category || "").trim(),
+          model: (row.model || "").trim(),
+          notes: (row.notes || "").trim(),
+          photo_url: row.photo_url || null,
+          quantity: Number(row.quantity) || 1,
+          location_id: Number(editLocation.id)
+        }))
+        
+        const { data: updated, error: updateError } = await supabase
+          .from("it_assets")
+          .upsert(updatePayload, { onConflict: "id" })
+          .select()
+        
+        if (updateError) throw updateError
+        savedIT = [...savedIT, ...updated]
+      }
+      
+      // === ОБОРУДОВАНИЕ (аналогично) ===
+      const newEqRows = nonItAssets.filter(row => !row.id || String(row.id).startsWith("new-"))
+      const existingEqRows = nonItAssets.filter(row => row.id && !String(row.id).startsWith("new-"))
+      
+      let savedEq = []
+      
+      if (newEqRows.length > 0) {
+        const newPayload = newEqRows.map(row => ({
+          serial: (row.serial || "").trim(),
+          category: (row.category || "").trim(),
+          model: (row.model || "").trim(),
+          notes: (row.notes || "").trim(),
+          photo_url: row.photo_url || null,
+          quantity: Number(row.quantity) || 1,
+          location_id: Number(editLocation.id)
+        }))
+        
+        const { data: inserted, error: insertError } = await supabase
+          .from("equipment_assets")
+          .insert(newPayload)
+          .select()
+        
+        if (insertError) throw insertError
+        savedEq = [...savedEq, ...inserted]
+      }
+      
+      if (existingEqRows.length > 0) {
+        const updatePayload = existingEqRows.map(row => ({
+          id: typeof row.id === "string" ? parseInt(row.id) : row.id,
+          serial: (row.serial || "").trim(),
+          category: (row.category || "").trim(),
+          model: (row.model || "").trim(),
+          notes: (row.notes || "").trim(),
+          photo_url: row.photo_url || null,
+          quantity: Number(row.quantity) || 1,
+          location_id: Number(editLocation.id)
+        }))
+        
+        const { data: updated, error: updateError } = await supabase
+          .from("equipment_assets")
+          .upsert(updatePayload, { onConflict: "id" })
+          .select()
+        
+        if (updateError) throw updateError
+        savedEq = [...savedEq, ...updated]
+      }
+      
+      // Обновляем state
+      setItAssets(prev => {
+        const newRows = prev.filter(r => String(r.id).startsWith("new-") || !r.id)
+        return [...newRows, ...savedIT]
+      })
+      
+      setNonItAssets(prev => {
+        const newRows = prev.filter(r => String(r.id).startsWith("new-") || !r.id)
+        return [...newRows, ...savedEq]
+      })
+      
+      setStatusMessage("✅ Изменения сохранены")
       
     } catch (error) {
-      console.error('❌ Save error:', error)
-      setErrorMessage('❌ Ошибка сохранения: ' + (error.message || 'Неизвестная ошибка'))
-      console.log('=== КОНЕЦ СОХРАНЕНИЯ С ОШИБКОЙ ===')
+      console.error("Save error:", error)
+      setErrorMessage(`❌ Ошибка сохранения: ${error.message}`)
     } finally {
       setSaving(false)
     }
@@ -628,7 +716,7 @@ export default function AdminPanel(){
                                   <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
                                   <button
                                     type="button"
-                                    onClick={() => deleteRow('it', r.id)}
+                                    onClick={() => deleteRow("it", r.id)}
                                     className="text-red-500 p-2 rounded hover:bg-red-50"
                                   >
                                     🗑️
@@ -636,12 +724,52 @@ export default function AdminPanel(){
                                 </div>
 
                                 <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Модель</label>
+                                  <input
+                                    type="text"
+                                    value={r.model || ""}
+                                    onChange={(e) => handleCellChange("it", r.id, "model", e.target.value)}
+                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Изображение устройства</label>
+                                  {r.photo_url ? (
+                                    <div className="relative group w-24 h-24">
+                                      <img 
+                                        src={r.photo_url} 
+                                        alt="Equipment" 
+                                        className="w-full h-full object-cover rounded cursor-pointer"
+                                        onClick={() => setSelectedImage(r.photo_url)}
+                                      />
+                                      <button
+                                        onClick={() => handlePhotoDelete("it", index, r.photo_url)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <label className="flex items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 text-blue-500 text-sm">
+                                      📷 Загрузить
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handlePhotoUpload("it", index, e.target.files[0])}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                  )}
+                                </div>
+
+                                <div>
                                   <label className="block text-xs font-semibold text-gray-600 mb-1">Серийник *</label>
                                   <input
                                     type="text"
-                                    value={r.serial || ''}
-                                    onChange={(e) => handleCellChange('it', r.id, 'serial', e.target.value)}
-                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
+                                    value={r.serial || ""}
+                                    onChange={(e) => handleCellChange("it", r.id, "serial", e.target.value)}
+                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
                                     placeholder="Введите серийный номер"
                                   />
                                 </div>
@@ -650,43 +778,21 @@ export default function AdminPanel(){
                                   <label className="block text-xs font-semibold text-gray-600 mb-1">Категория *</label>
                                   <input
                                     type="text"
-                                    value={r.category || ''}
-                                    onChange={(e) => handleCellChange('it', r.id, 'category', e.target.value)}
+                                    value={r.category || ""}
+                                    onChange={(e) => handleCellChange("it", r.id, "category", e.target.value)}
                                     className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     placeholder="IT: Ноутбук, ПК..."
                                   />
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Модель</label>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
                                   <input
-                                    type="text"
-                                    value={r.model || ''}
-                                    onChange={(e) => handleCellChange('it', r.id, 'model', e.target.value)}
-                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    type="number"
+                                    value={r.quantity || 1}
+                                    onChange={(e) => handleCellChange("it", r.id, "quantity", e.target.value)}
+                                    className="w-full px-3 py-2 border rounded w-20"
                                   />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      value={r.quantity || 1}
-                                      onChange={(e) => handleCellChange('it', r.id, 'quantity', parseInt(e.target.value) || 1)}
-                                      className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Примечание</label>
-                                    <input
-                                      type="text"
-                                      value={r.notes || ''}
-                                      onChange={(e) => handleCellChange('it', r.id, 'notes', e.target.value)}
-                                      className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    />
-                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -696,22 +802,58 @@ export default function AdminPanel(){
                             <table className="w-full text-sm">
                               <thead className="bg-gray-50">
                                 <tr className="text-left text-gray-600 border-b">
+                                  <th className="px-3 py-2">Модель</th>
+                                  <th className="px-3 py-2">Фото</th>
                                   <th className="px-3 py-2">Серийник *</th>
                                   <th className="px-3 py-2">Категория *</th>
-                                  <th className="px-3 py-2">Модель</th>
                                   <th className="px-3 py-2 w-16">Кол-во</th>
-                                  <th className="px-3 py-2">Примечание</th>
                                   <th className="px-3 py-2 w-10"></th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {itAssets.map(r => (
+                                {itAssets.map((r, index) => (
                                   <tr key={r.id} className="border-t hover:bg-gray-50">
                                     <td className="px-3 py-2">
+                                      <input
+                                        type="text"
+                                        value={r.model || ""}
+                                        onChange={(e) => handleCellChange("it", r.id, "model", e.target.value)}
+                                        className="px-3 py-2 border rounded"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      {r.photo_url ? (
+                                        <div className="relative group">
+                                          <img 
+                                            src={r.photo_url} 
+                                            alt="Equipment" 
+                                            className="w-12 h-12 object-cover rounded cursor-pointer"
+                                            onClick={() => setSelectedImage(r.photo_url)}
+                                          />
+                                          <button
+                                            onClick={() => handlePhotoDelete("it", index, r.photo_url)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <label className="cursor-pointer text-blue-500 text-sm">
+                                          📷 Загрузить
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => handlePhotoUpload("it", index, e.target.files[0])}
+                                            className="hidden"
+                                          />
+                                        </label>
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-2">
                                       <input 
-                                        value={r.serial || ''} 
-                                        onChange={e => handleCellChange('it', r.id, 'serial', e.target.value)} 
-                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
+                                        value={r.serial || ""} 
+                                        onChange={e => handleCellChange("it", r.id, "serial", e.target.value)} 
+                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
                                         placeholder="DV-001"
                                       />
                                     </td>
@@ -720,38 +862,24 @@ export default function AdminPanel(){
                                         type="text" 
                                         required 
                                         placeholder="Ноутбук" 
-                                        value={r.category || ''} 
-                                        onChange={e => handleCellChange('it', r.id, 'category', e.target.value)} 
+                                        value={r.category || ""} 
+                                        onChange={e => handleCellChange("it", r.id, "category", e.target.value)} 
                                         className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                       <div className="text-[10px] text-gray-400 mt-0.5">IT: Ноутбук, ПК...</div>
                                     </td>
                                     <td className="px-3 py-2">
                                       <input 
-                                        value={r.model || ''} 
-                                        onChange={e => handleCellChange('it', r.id, 'model', e.target.value)} 
-                                        className="border rounded px-2 py-1 w-full md:w-40 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                      />
-                                    </td>
-                                    <td className="px-3 py-2">
-                                      <input 
                                         type="number" 
                                         min="1"
                                         value={r.quantity || 1} 
-                                        onChange={e => handleCellChange('it', r.id, 'quantity', parseInt(e.target.value) || 1)} 
+                                        onChange={e => handleCellChange("it", r.id, "quantity", parseInt(e.target.value) || 1)} 
                                         className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                      />
-                                    </td>
-                                    <td className="px-3 py-2">
-                                      <input 
-                                        value={r.notes || ''} 
-                                        onChange={e => handleCellChange('it', r.id, 'notes', e.target.value)} 
-                                        className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                     </td>
                                     <td className="px-3 py-2 text-center">
                                       <button 
-                                        onClick={() => deleteRow('it', r.id)} 
+                                        onClick={() => deleteRow("it", r.id)} 
                                         className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
                                         title="Удалить строку"
                                       >
@@ -794,7 +922,7 @@ export default function AdminPanel(){
                                   <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
                                   <button
                                     type="button"
-                                    onClick={() => deleteRow('eq', r.id)}
+                                    onClick={() => deleteRow("eq", r.id)}
                                     className="text-red-500 p-2 rounded hover:bg-red-50"
                                   >
                                     🗑️
@@ -802,12 +930,52 @@ export default function AdminPanel(){
                                 </div>
 
                                 <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Модель</label>
+                                  <input
+                                    type="text"
+                                    value={r.model || ""}
+                                    onChange={(e) => handleCellChange("eq", r.id, "model", e.target.value)}
+                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Изображение устройства</label>
+                                  {r.photo_url ? (
+                                    <div className="relative group w-24 h-24">
+                                      <img 
+                                        src={r.photo_url} 
+                                        alt="Equipment" 
+                                        className="w-full h-full object-cover rounded cursor-pointer"
+                                        onClick={() => setSelectedImage(r.photo_url)}
+                                      />
+                                      <button
+                                        onClick={() => handlePhotoDelete("eq", index, r.photo_url)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <label className="flex items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 text-blue-500 text-sm">
+                                      📷 Загрузить
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handlePhotoUpload("eq", index, e.target.files[0])}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                  )}
+                                </div>
+
+                                <div>
                                   <label className="block text-xs font-semibold text-gray-600 mb-1">Серийник *</label>
                                   <input
                                     type="text"
-                                    value={r.serial || ''}
-                                    onChange={(e) => handleCellChange('eq', r.id, 'serial', e.target.value)}
-                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
+                                    value={r.serial || ""}
+                                    onChange={(e) => handleCellChange("eq", r.id, "serial", e.target.value)}
+                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
                                     placeholder="Введите серийный номер"
                                   />
                                 </div>
@@ -816,43 +984,21 @@ export default function AdminPanel(){
                                   <label className="block text-xs font-semibold text-gray-600 mb-1">Категория *</label>
                                   <input
                                     type="text"
-                                    value={r.category || ''}
-                                    onChange={(e) => handleCellChange('eq', r.id, 'category', e.target.value)}
+                                    value={r.category || ""}
+                                    onChange={(e) => handleCellChange("eq", r.id, "category", e.target.value)}
                                     className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     placeholder="Оборуд.: Стол, Стул..."
                                   />
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Модель</label>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
                                   <input
-                                    type="text"
-                                    value={r.model || ''}
-                                    onChange={(e) => handleCellChange('eq', r.id, 'model', e.target.value)}
-                                    className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    type="number"
+                                    value={r.quantity || 1}
+                                    onChange={(e) => handleCellChange("eq", r.id, "quantity", e.target.value)}
+                                    className="w-full px-3 py-2 border rounded w-20"
                                   />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      value={r.quantity || 1}
-                                      onChange={(e) => handleCellChange('eq', r.id, 'quantity', parseInt(e.target.value) || 1)}
-                                      className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Примечание</label>
-                                    <input
-                                      type="text"
-                                      value={r.notes || ''}
-                                      onChange={(e) => handleCellChange('eq', r.id, 'notes', e.target.value)}
-                                      className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    />
-                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -862,22 +1008,58 @@ export default function AdminPanel(){
                             <table className="w-full text-sm">
                               <thead className="bg-gray-50">
                                 <tr className="text-left text-gray-600 border-b">
+                                  <th className="px-3 py-2">Модель</th>
+                                  <th className="px-3 py-2">Фото</th>
                                   <th className="px-3 py-2">Серийник *</th>
                                   <th className="px-3 py-2">Категория *</th>
-                                  <th className="px-3 py-2">Модель</th>
                                   <th className="px-3 py-2 w-16">Кол-во</th>
-                                  <th className="px-3 py-2">Примечание</th>
                                   <th className="px-3 py-2 w-10"></th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {nonItAssets.map(r => (
+                                {nonItAssets.map((r, index) => (
                                   <tr key={r.id} className="border-t hover:bg-gray-50">
                                     <td className="px-3 py-2">
+                                      <input
+                                        type="text"
+                                        value={r.model || ""}
+                                        onChange={(e) => handleCellChange("eq", r.id, "model", e.target.value)}
+                                        className="px-3 py-2 border rounded"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      {r.photo_url ? (
+                                        <div className="relative group">
+                                          <img 
+                                            src={r.photo_url} 
+                                            alt="Equipment" 
+                                            className="w-12 h-12 object-cover rounded cursor-pointer"
+                                            onClick={() => setSelectedImage(r.photo_url)}
+                                          />
+                                          <button
+                                            onClick={() => handlePhotoDelete("eq", index, r.photo_url)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <label className="cursor-pointer text-blue-500 text-sm">
+                                          📷 Загрузить
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => handlePhotoUpload("eq", index, e.target.files[0])}
+                                            className="hidden"
+                                          />
+                                        </label>
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-2">
                                       <input 
-                                        value={r.serial || ''} 
-                                        onChange={e => handleCellChange('eq', r.id, 'serial', e.target.value)} 
-                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? 'ring-2 ring-red-500 border-red-500 bg-red-50' : ''}`}
+                                        value={r.serial || ""} 
+                                        onChange={e => handleCellChange("eq", r.id, "serial", e.target.value)} 
+                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
                                         placeholder="FR-001"
                                       />
                                     </td>
@@ -886,38 +1068,24 @@ export default function AdminPanel(){
                                         type="text" 
                                         required 
                                         placeholder="Холодильник" 
-                                        value={r.category || ''} 
-                                        onChange={e => handleCellChange('eq', r.id, 'category', e.target.value)} 
+                                        value={r.category || ""} 
+                                        onChange={e => handleCellChange("eq", r.id, "category", e.target.value)} 
                                         className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                       <div className="text-[10px] text-gray-400 mt-0.5">Оборуд.: Стол, Стул...</div>
                                     </td>
                                     <td className="px-3 py-2">
                                       <input 
-                                        value={r.model || ''} 
-                                        onChange={e => handleCellChange('eq', r.id, 'model', e.target.value)} 
-                                        className="border rounded px-2 py-1 w-full md:w-40 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                      />
-                                    </td>
-                                    <td className="px-3 py-2">
-                                      <input 
                                         type="number" 
                                         min="1"
                                         value={r.quantity || 1} 
-                                        onChange={e => handleCellChange('eq', r.id, 'quantity', parseInt(e.target.value) || 1)} 
+                                        onChange={e => handleCellChange("eq", r.id, "quantity", parseInt(e.target.value) || 1)} 
                                         className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
-                                      />
-                                    </td>
-                                    <td className="px-3 py-2">
-                                      <input 
-                                        value={r.notes || ''} 
-                                        onChange={e => handleCellChange('eq', r.id, 'notes', e.target.value)} 
-                                        className="border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                     </td>
                                     <td className="px-3 py-2 text-center">
                                       <button 
-                                        onClick={() => deleteRow('eq', r.id)} 
+                                        onClick={() => deleteRow("eq", r.id)} 
                                         className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
                                         title="Удалить строку"
                                       >
@@ -940,7 +1108,7 @@ export default function AdminPanel(){
               {editLocation && (itAssets.length > 0 || nonItAssets.length > 0) && (
                 <div className="mt-6">
                   <button 
-                    onClick={saveChanges} 
+                    onClick={handleSave} 
                     disabled={saving}
                     className="w-full md:w-auto sticky bottom-4 z-20 px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
@@ -958,6 +1126,20 @@ export default function AdminPanel(){
           )}
         </section>
       </main>
+
+      {/* Модальное окно для фото */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <img 
+            src={selectedImage} 
+            alt="Full size" 
+            className="max-w-full max-h-[90vh] rounded"
+          />
+        </div>
+      )}
 
       {/* Модальное окно: Добавить объект */}
       {showAdd && (

@@ -2,17 +2,16 @@ import React, { useMemo, useState } from 'react'
 
 const downloadCSV = (data = [], filename = 'export') => {
   const safeRows = Array.isArray(data) ? data : []
-  const headers = ['Серийный номер', 'Категория', 'Модель', 'Количество', 'Заметки']
+  const headers = ['Модель', 'Серийный номер', 'Категория', 'Количество']
 
   const csvContent = [
     headers.join(','),
     ...safeRows.map((row) =>
       [
+        row?.model || '',
         row?.serial || '',
         row?.category || '',
-        row?.model || '',
-        row?.quantity || '',
-        row?.notes || ''
+        row?.quantity || ''
       ]
         .map((value) => `"${String(value).replace(/"/g, '""')}"`)
         .join(',')
@@ -30,7 +29,8 @@ const downloadCSV = (data = [], filename = 'export') => {
 const EquipmentTable = ({ title, rows }) => {
   const safeRows = Array.isArray(rows) ? rows : []
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [viewMode, setViewMode] = useState('summary')
+  const [viewMode, setViewMode] = useState('list') // Default to list view
+  const [selectedImage, setSelectedImage] = useState(null) // State for full-size image modal
 
   const categories = useMemo(() => {
     const unique = [...new Set(safeRows.map(row => row?.category).filter(Boolean))]
@@ -137,21 +137,32 @@ const EquipmentTable = ({ title, rows }) => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
+                  <th className="border p-2">Модель</th>
+                  <th className="border p-2">Фото</th>
                   <th className="border p-2">Серийный номер</th>
                   <th className="border p-2">Категория</th>
-                  <th className="border p-2">Модель</th>
                   <th className="border p-2">Количество</th>
-                  <th className="border p-2">Заметки</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRows.map((row, index) => (
                   <tr key={row?.id || index} className="hover:bg-gray-50">
+                    <td className="border p-2 font-semibold">{row?.model || '-'}</td>
+                    <td className="border p-2">
+                      {row?.photo_url ? (
+                        <img 
+                          src={row.photo_url} 
+                          alt="Equipment" 
+                          className="w-12 h-12 object-cover rounded cursor-pointer"
+                          onClick={() => setSelectedImage(row.photo_url)}
+                        />
+                      ) : (
+                        <span className="text-gray-400">📦</span>
+                      )}
+                    </td>
                     <td className="border p-2">{row?.serial || '-'}</td>
                     <td className="border p-2">{row?.category || '-'}</td>
-                    <td className="border p-2">{row?.model || '-'}</td>
-                    <td className="border p-2">{row?.quantity || 0}</td>
-                    <td className="border p-2">{row?.notes || '-'}</td>
+                    <td className="border p-2">{row?.quantity || 1}</td>
                   </tr>
                 ))}
               </tbody>
@@ -162,22 +173,41 @@ const EquipmentTable = ({ title, rows }) => {
           <div className="md:hidden space-y-3">
             {filteredRows.map((row, index) => (
               <div key={row?.id || index} className="border rounded-lg p-4 bg-white shadow-sm">
-                <div className="flex justify-between items-start mb-3 gap-3">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-base text-gray-900 truncate">{row?.serial || '-'}</div>
-                    <div className="text-sm text-gray-600 truncate">{row?.category || '-'}</div>
-                  </div>
-                  <div className="flex-shrink-0 bg-blue-100 px-2 py-1 rounded text-sm font-semibold text-blue-800">
-                    {row?.quantity || 0} шт
+                <div className="flex items-center gap-3 mb-3">
+                  {row?.photo_url ? (
+                    <img 
+                      src={row.photo_url} 
+                      alt="Equipment" 
+                      className="w-16 h-16 object-cover rounded"
+                      onClick={() => setSelectedImage(row.photo_url)}
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-2xl">
+                      📦
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-bold text-lg">{row?.model || '-'}</div>
+                    <div className="text-sm text-gray-600">{row?.category || '-'}</div>
                   </div>
                 </div>
-                <div className="text-sm space-y-2">
-                  <p className="text-gray-700"><span className="font-semibold">Модель:</span> {row?.model || '-'}</p>
-                  <p className="text-gray-700"><span className="font-semibold">Заметки:</span> {row?.notes || '-'}</p>
+                <div className="text-sm space-y-1">
+                  <p><span className="font-semibold">S/N:</span> {row?.serial || '-'}</p>
+                  <p><span className="font-semibold">Количество:</span> {row?.quantity || 1} шт</p>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Модальное окно */}
+          {selectedImage && (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+              onClick={() => setSelectedImage(null)}
+            >
+              <img src={selectedImage} alt="Full size" className="max-w-full max-h-[90vh] rounded" />
+            </div>
+          )}
 
           {filteredRows.length === 0 && (
             <div className="text-center py-8 text-gray-500">Нет данных</div>
