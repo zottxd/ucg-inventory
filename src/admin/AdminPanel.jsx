@@ -29,7 +29,7 @@ export default function AdminPanel(){
   const [confirm, setConfirm] = useState({open:false, loc:null})
 
   // Active tab for tables: 'it' or 'equipment'
-  const [activeTab, setActiveTab] = useState('it') // 'it' или 'equipment'
+  const [activeTab, setActiveTab] = useState('it')
 
   const [editLocation, setEditLocation] = useState(null)
   const [locationSearch, setLocationSearch] = useState('')
@@ -42,7 +42,7 @@ export default function AdminPanel(){
   const [statusMessage, setStatusMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [invalidRows, setInvalidRows] = useState([])
-  const [selectedImage, setSelectedImage] = useState(null) // State for full-size image modal
+  const [selectedImage, setSelectedImage] = useState(null)
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -55,7 +55,6 @@ export default function AdminPanel(){
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Фильтрация списка объектов для поиска
   // Загрузка списка объектов при старте
   useEffect(()=>{
     async function loadLocations(){
@@ -123,7 +122,6 @@ export default function AdminPanel(){
     setLoadingAssets(true)
     setErrorMessage('')
     try {
-      // Load IT assets from it_assets table
       const { data: itData, error: itError } = await supabase
         .from('it_assets')
         .select('*')
@@ -133,7 +131,6 @@ export default function AdminPanel(){
       
       if(itError) throw itError
       
-      // Load Equipment assets from equipment_assets table
       const { data: eqData, error: eqError } = await supabase
         .from('equipment_assets')
         .select('*')
@@ -211,7 +208,6 @@ export default function AdminPanel(){
     setSaving(true)
     setErrorMessage('')
     try {
-      // Delete from both IT and Equipment tables
       await supabase.from('it_assets').delete().eq('location_id', loc.id)
       await supabase.from('equipment_assets').delete().eq('location_id', loc.id)
       
@@ -270,52 +266,49 @@ export default function AdminPanel(){
     setItAssets(prev => [
       ...prev,
       {
-        id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        serial: '',
-        category: 'Ноутбук', // Дефолтная категория
-        model: '',
+        // id НЕ создаём! База сгенерирует сама при INSERT
+        serial: "",
+        category: "",
+        model: "",
         quantity: 1,
-        notes: '',
-        location_id: editLocation.id,
-        isNew: true,
+        notes: "",
+        photo_url: null,
+        location_id: Number(editLocation.id)
       }
     ])
   }
 
-  // Добавление строки в таблицу Оборудования
+  // Добавление строки в таблицу оборудования
   function addNonItRow(){
     if(!editLocation?.id) return
     setNonItAssets(prev => [
       ...prev,
       {
-        id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        serial: '',
-        category: 'Холодильник', // Дефолтная категория
-        model: '',
+        // id НЕ создаём! База сгенерирует сама при INSERT
+        serial: "",
+        category: "",
+        model: "",
         quantity: 1,
-        notes: '',
-        location_id: editLocation.id,
-        isNew: true,
+        notes: "",
+        photo_url: null,
+        location_id: Number(editLocation.id)
       }
     ])
   }
 
   // Удаление строки
   async function deleteRow(type, id){
-    // Сначала удаляем из локального состояния
     if (type === 'it') {
       setItAssets(prev => prev.filter(r => r.id !== id))
     } else {
       setNonItAssets(prev => prev.filter(r => r.id !== id))
     }
     
-    // Если это новая (не сохраненная) строка — просто убираем из UI
-    if(String(id).startsWith('new-')){
+    if(!id || String(id).startsWith('new-')){
       setStatusMessage('🗑 Строка удалена')
       return
     }
     
-    // Иначе удаляем из базы
     const tableName = type === 'it' ? 'it_assets' : 'equipment_assets'
     try {
       const { error } = await supabase
@@ -328,7 +321,6 @@ export default function AdminPanel(){
     } catch (err) {
       console.error('Delete row error:', err)
       setErrorMessage('❌ Ошибка удаления строки')
-      // Восстанавливаем строку при ошибке
       loadAssets(editLocation.id)
     }
   }
@@ -354,10 +346,9 @@ export default function AdminPanel(){
       .from("equipment-photos")
       .getPublicUrl(fileName)
     
-    // Определяем таблицу
     const tableName = type === "it" ? "it_assets" : "equipment_assets"
-    const rows = type === "it" ? itAssets : nonItAssets // Use actual state variable names
-    const setRows = type === "it" ? setItAssets : setNonItAssets // Use actual state setter names
+    const rows = type === "it" ? itAssets : nonItAssets
+    const setRows = type === "it" ? setItAssets : setNonItAssets
     
     const row = rows[rowIndex]
     const { error: updateError } = await supabase
@@ -431,7 +422,6 @@ export default function AdminPanel(){
     setInvalidRows([])
     
     try {
-      // Валидация перед сохранением
       const invalidItIds = itAssets.filter(r => !String(r.serial || "").trim()).map(r => r.id)
       const invalidEqIds = nonItAssets.filter(r => !String(r.serial || "").trim()).map(r => r.id)
 
@@ -444,12 +434,11 @@ export default function AdminPanel(){
       }
 
       // === IT ТЕХНИКА ===
-      const newITRows = itAssets.filter(row => !row.id || String(row.id).startsWith("new-"))
-      const existingITRows = itAssets.filter(row => row.id && !String(row.id).startsWith("new-"))
+      const newITRows = itAssets.filter(row => !row.id)
+      const existingITRows = itAssets.filter(row => row.id)
       
       let savedIT = []
       
-      // Для НОВЫХ записей — INSERT без id
       if (newITRows.length > 0) {
         const newPayload = newITRows.map(row => ({
           serial: (row.serial || "").trim(),
@@ -459,7 +448,6 @@ export default function AdminPanel(){
           photo_url: row.photo_url || null,
           quantity: Number(row.quantity) || 1,
           location_id: Number(editLocation.id)
-          // id НЕ включаем!
         }))
         
         const { data: inserted, error: insertError } = await supabase
@@ -471,10 +459,9 @@ export default function AdminPanel(){
         savedIT = [...savedIT, ...inserted]
       }
       
-      // Для СУЩЕСТВУЮЩИХ записей — UPDATE с id
       if (existingITRows.length > 0) {
         const updatePayload = existingITRows.map(row => ({
-          id: typeof row.id === "string" ? parseInt(row.id) : row.id,
+          id: Number(row.id),
           serial: (row.serial || "").trim(),
           category: (row.category || "").trim(),
           model: (row.model || "").trim(),
@@ -493,9 +480,9 @@ export default function AdminPanel(){
         savedIT = [...savedIT, ...updated]
       }
       
-      // === ОБОРУДОВАНИЕ (аналогично) ===
-      const newEqRows = nonItAssets.filter(row => !row.id || String(row.id).startsWith("new-"))
-      const existingEqRows = nonItAssets.filter(row => row.id && !String(row.id).startsWith("new-"))
+      // === ОБОРУДОВАНИЕ ===
+      const newEqRows = nonItAssets.filter(row => !row.id)
+      const existingEqRows = nonItAssets.filter(row => row.id)
       
       let savedEq = []
       
@@ -521,7 +508,7 @@ export default function AdminPanel(){
       
       if (existingEqRows.length > 0) {
         const updatePayload = existingEqRows.map(row => ({
-          id: typeof row.id === "string" ? parseInt(row.id) : row.id,
+          id: Number(row.id),
           serial: (row.serial || "").trim(),
           category: (row.category || "").trim(),
           model: (row.model || "").trim(),
@@ -540,14 +527,13 @@ export default function AdminPanel(){
         savedEq = [...savedEq, ...updated]
       }
       
-      // Обновляем state
       setItAssets(prev => {
-        const newRows = prev.filter(r => String(r.id).startsWith("new-") || !r.id)
+        const newRows = prev.filter(r => !r.id)
         return [...newRows, ...savedIT]
       })
       
       setNonItAssets(prev => {
-        const newRows = prev.filter(r => String(r.id).startsWith("new-") || !r.id)
+        const newRows = prev.filter(r => !r.id)
         return [...newRows, ...savedEq]
       })
       
@@ -566,15 +552,12 @@ export default function AdminPanel(){
       <main className="max-w-[1200px] mx-auto p-4 md:p-8">
         <h1 className="text-2xl font-semibold mb-6 text-blue-800">⚙️ ПАНЕЛЬ АДМИНИСТРАТОРА</h1>
 
-        {/* Сообщения о статусе */}
         {errorMessage && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded border border-red-200">{errorMessage}</div>}
         {statusMessage && <div className="mb-4 p-3 bg-green-50 text-green-700 rounded border border-green-200">{statusMessage}</div>}
 
-        {/* Секция 2: Редактор техники */}
         <section className="bg-white rounded-lg shadow p-4">
           <h2 className="font-semibold text-lg mb-4">✏️ Редактор техники</h2>
           
-          {/* Выбор объекта - AUTOCOMPLETE */}
           <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-6">
             <div className="relative flex-1" ref={locationDropdownRef}>
               <input
@@ -590,7 +573,6 @@ export default function AdminPanel(){
                 className="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:outline-none transition"
               />
               
-              {/* Dropdown list */}
               {showLocationDropdown && (
                 <div className="absolute mt-1 max-h-60 overflow-y-auto rounded shadow-lg border border-gray-200 w-full bg-white z-50">
                   {locations
@@ -615,7 +597,6 @@ export default function AdminPanel(){
                       </div>
                     ))}
                   
-                  {/* Empty state */}
                   {locations.filter(loc =>
                     loc.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
                     (loc.address && loc.address.toLowerCase().includes(locationSearch.toLowerCase()))
@@ -664,7 +645,6 @@ export default function AdminPanel(){
                 <div className="p-8 text-center text-gray-600">Загрузка техники...</div>
               ) : (
                 <div>
-                  {/* Tabs switcher */}
                   <div className="flex gap-2 mb-4" data-ignore-autocomplete="true">
                     <button
                       onClick={(e) => { e.stopPropagation(); setActiveTab('it'); setShowLocationDropdown(false); }}
@@ -690,7 +670,6 @@ export default function AdminPanel(){
                     </button>
                   </div>
 
-                  {/* IT tab */}
                   {activeTab === 'it' && (
                     <div className="bg-white rounded-lg border shadow-sm mb-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
@@ -896,7 +875,6 @@ export default function AdminPanel(){
                     </div>
                   )}
 
-                  {/* Equipment tab */}
                   {activeTab === 'equipment' && (
                     <div className="bg-white rounded-lg border shadow-sm">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
@@ -1104,7 +1082,6 @@ export default function AdminPanel(){
                 </div>
               )}
 
-              {/* Кнопка Сохранить (общая для обеих таблиц) */}
               {editLocation && (itAssets.length > 0 || nonItAssets.length > 0) && (
                 <div className="mt-6">
                   <button 
@@ -1127,7 +1104,6 @@ export default function AdminPanel(){
         </section>
       </main>
 
-      {/* Модальное окно для фото */}
       {selectedImage && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
@@ -1141,7 +1117,6 @@ export default function AdminPanel(){
         </div>
       )}
 
-      {/* Модальное окно: Добавить объект */}
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={()=>setShowAdd(false)} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
@@ -1197,7 +1172,6 @@ export default function AdminPanel(){
         </div>
       )}
 
-      {/* Модальное окно: Подтверждение удаления */}
       <ConfirmModal 
         open={confirm.open} 
         title={confirm.loc ? `Удалить объект "${confirm.loc.name}" и всю его технику?` : ''} 
