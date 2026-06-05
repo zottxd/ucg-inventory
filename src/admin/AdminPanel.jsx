@@ -247,7 +247,13 @@ export default function AdminPanel(){
 
   // Изменение ячейки в таблице
   const handleCellChange = useCallback((type, id, field, value) => {
-    const updateRow = row => row.id === id ? {...row, [field]: value} : row
+    const updateRow = row => {
+      // Ищем по _tempKey для новых строк, по id для существующих
+      if (row._tempKey === id || row.id === id) {
+        return {...row, [field]: value}
+      }
+      return row
+    }
 
     if (type === 'it') {
       setItAssets(prev => prev.map(updateRow))
@@ -266,7 +272,7 @@ export default function AdminPanel(){
     setItAssets(prev => [
       ...prev,
       {
-        // id НЕ создаём! База сгенерирует сама при INSERT
+        _tempKey: crypto.randomUUID(), // Уникальный ключ для React (НЕ для БД!)
         serial: "",
         category: "",
         model: "",
@@ -284,7 +290,7 @@ export default function AdminPanel(){
     setNonItAssets(prev => [
       ...prev,
       {
-        // id НЕ создаём! База сгенерирует сама при INSERT
+        _tempKey: crypto.randomUUID(), // Уникальный ключ для React
         serial: "",
         category: "",
         model: "",
@@ -440,7 +446,7 @@ export default function AdminPanel(){
       let savedIT = []
       
       if (newITRows.length > 0) {
-        const newPayload = newITRows.map(row => ({
+        const newPayload = newITRows.map(({_tempKey, ...row}) => ({
           serial: (row.serial || "").trim(),
           category: (row.category || "").trim(),
           model: (row.model || "").trim(),
@@ -487,7 +493,7 @@ export default function AdminPanel(){
       let savedEq = []
       
       if (newEqRows.length > 0) {
-        const newPayload = newEqRows.map(row => ({
+        const newPayload = newEqRows.map(({_tempKey, ...row}) => ({
           serial: (row.serial || "").trim(),
           category: (row.category || "").trim(),
           model: (row.model || "").trim(),
@@ -528,13 +534,13 @@ export default function AdminPanel(){
       }
       
       setItAssets(prev => {
-        const newRows = prev.filter(r => !r.id)
-        return [...newRows, ...savedIT]
+        const newRows = prev.filter(r => !r.id) // Удаляем пустые новые строки
+        return [...newRows, ...savedIT] // Добавляем сохранённые с реальными id
       })
       
       setNonItAssets(prev => {
-        const newRows = prev.filter(r => !r.id)
-        return [...newRows, ...savedEq]
+        const newRows = prev.filter(r => !r.id) // Удаляем пустые новые строки
+        return [...newRows, ...savedEq] // Добавляем сохранённые с реальными id
       })
       
       setStatusMessage("✅ Изменения сохранены")
@@ -690,7 +696,7 @@ export default function AdminPanel(){
                         <>
                           <div className="md:hidden space-y-4">
                             {itAssets.map((r, index) => (
-                              <div key={r.id || index} className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
+                              <div key={r._tempKey || r.id} className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
                                 <div className="flex items-center justify-between">
                                   <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
                                   <button
@@ -707,7 +713,7 @@ export default function AdminPanel(){
                                   <input
                                     type="text"
                                     value={r.model || ""}
-                                    onChange={(e) => handleCellChange("it", r.id, "model", e.target.value)}
+                                    onChange={(e) => handleCellChange("it", r._tempKey || r.id, "model", e.target.value)}
                                     className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                   />
                                 </div>
@@ -747,7 +753,7 @@ export default function AdminPanel(){
                                   <input
                                     type="text"
                                     value={r.serial || ""}
-                                    onChange={(e) => handleCellChange("it", r.id, "serial", e.target.value)}
+                                    onChange={(e) => handleCellChange("it", r._tempKey || r.id, "serial", e.target.value)}
                                     className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
                                     placeholder="Введите серийный номер"
                                   />
@@ -758,7 +764,7 @@ export default function AdminPanel(){
                                   <input
                                     type="text"
                                     value={r.category || ""}
-                                    onChange={(e) => handleCellChange("it", r.id, "category", e.target.value)}
+                                    onChange={(e) => handleCellChange("it", r._tempKey || r.id, "category", e.target.value)}
                                     className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     placeholder="IT: Ноутбук, ПК..."
                                   />
@@ -769,7 +775,7 @@ export default function AdminPanel(){
                                   <input
                                     type="number"
                                     value={r.quantity || 1}
-                                    onChange={(e) => handleCellChange("it", r.id, "quantity", e.target.value)}
+                                    onChange={(e) => handleCellChange("it", r._tempKey || r.id, "quantity", e.target.value)}
                                     className="w-full px-3 py-2 border rounded w-20"
                                   />
                                 </div>
@@ -791,12 +797,12 @@ export default function AdminPanel(){
                               </thead>
                               <tbody>
                                 {itAssets.map((r, index) => (
-                                  <tr key={r.id} className="border-t hover:bg-gray-50">
+                                  <tr key={r._tempKey || r.id} className="border-t hover:bg-gray-50">
                                     <td className="px-3 py-2">
                                       <input
                                         type="text"
                                         value={r.model || ""}
-                                        onChange={(e) => handleCellChange("it", r.id, "model", e.target.value)}
+                                        onChange={(e) => handleCellChange("it", r._tempKey || r.id, "model", e.target.value)}
                                         className="px-3 py-2 border rounded"
                                       />
                                     </td>
@@ -831,7 +837,7 @@ export default function AdminPanel(){
                                     <td className="px-3 py-2">
                                       <input 
                                         value={r.serial || ""} 
-                                        onChange={e => handleCellChange("it", r.id, "serial", e.target.value)} 
+                                        onChange={e => handleCellChange("it", r._tempKey || r.id, "serial", e.target.value)} 
                                         className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
                                         placeholder="DV-001"
                                       />
@@ -842,7 +848,7 @@ export default function AdminPanel(){
                                         required 
                                         placeholder="Ноутбук" 
                                         value={r.category || ""} 
-                                        onChange={e => handleCellChange("it", r.id, "category", e.target.value)} 
+                                        onChange={e => handleCellChange("it", r._tempKey || r.id, "category", e.target.value)} 
                                         className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                       <div className="text-[10px] text-gray-400 mt-0.5">IT: Ноутбук, ПК...</div>
@@ -852,7 +858,7 @@ export default function AdminPanel(){
                                         type="number" 
                                         min="1"
                                         value={r.quantity || 1} 
-                                        onChange={e => handleCellChange("it", r.id, "quantity", parseInt(e.target.value) || 1)} 
+                                        onChange={e => handleCellChange("it", r._tempKey || r.id, "quantity", parseInt(e.target.value) || 1)} 
                                         className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                     </td>
@@ -895,7 +901,7 @@ export default function AdminPanel(){
                         <>
                           <div className="md:hidden space-y-4">
                             {nonItAssets.map((r, index) => (
-                              <div key={r.id || index} className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
+                              <div key={r._tempKey || r.id} className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
                                 <div className="flex items-center justify-between">
                                   <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
                                   <button
@@ -912,7 +918,7 @@ export default function AdminPanel(){
                                   <input
                                     type="text"
                                     value={r.model || ""}
-                                    onChange={(e) => handleCellChange("eq", r.id, "model", e.target.value)}
+                                    onChange={(e) => handleCellChange("eq", r._tempKey || r.id, "model", e.target.value)}
                                     className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                   />
                                 </div>
@@ -952,7 +958,7 @@ export default function AdminPanel(){
                                   <input
                                     type="text"
                                     value={r.serial || ""}
-                                    onChange={(e) => handleCellChange("eq", r.id, "serial", e.target.value)}
+                                    onChange={(e) => handleCellChange("eq", r._tempKey || r.id, "serial", e.target.value)}
                                     className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
                                     placeholder="Введите серийный номер"
                                   />
@@ -963,7 +969,7 @@ export default function AdminPanel(){
                                   <input
                                     type="text"
                                     value={r.category || ""}
-                                    onChange={(e) => handleCellChange("eq", r.id, "category", e.target.value)}
+                                    onChange={(e) => handleCellChange("eq", r._tempKey || r.id, "category", e.target.value)}
                                     className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     placeholder="Оборуд.: Стол, Стул..."
                                   />
@@ -974,7 +980,7 @@ export default function AdminPanel(){
                                   <input
                                     type="number"
                                     value={r.quantity || 1}
-                                    onChange={(e) => handleCellChange("eq", r.id, "quantity", e.target.value)}
+                                    onChange={(e) => handleCellChange("eq", r._tempKey || r.id, "quantity", e.target.value)}
                                     className="w-full px-3 py-2 border rounded w-20"
                                   />
                                 </div>
@@ -996,12 +1002,12 @@ export default function AdminPanel(){
                               </thead>
                               <tbody>
                                 {nonItAssets.map((r, index) => (
-                                  <tr key={r.id} className="border-t hover:bg-gray-50">
+                                  <tr key={r._tempKey || r.id} className="border-t hover:bg-gray-50">
                                     <td className="px-3 py-2">
                                       <input
                                         type="text"
                                         value={r.model || ""}
-                                        onChange={(e) => handleCellChange("eq", r.id, "model", e.target.value)}
+                                        onChange={(e) => handleCellChange("eq", r._tempKey || r.id, "model", e.target.value)}
                                         className="px-3 py-2 border rounded"
                                       />
                                     </td>
@@ -1036,7 +1042,7 @@ export default function AdminPanel(){
                                     <td className="px-3 py-2">
                                       <input 
                                         value={r.serial || ""} 
-                                        onChange={e => handleCellChange("eq", r.id, "serial", e.target.value)} 
+                                        onChange={e => handleCellChange("eq", r._tempKey || r.id, "serial", e.target.value)} 
                                         className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
                                         placeholder="FR-001"
                                       />
@@ -1047,7 +1053,7 @@ export default function AdminPanel(){
                                         required 
                                         placeholder="Холодильник" 
                                         value={r.category || ""} 
-                                        onChange={e => handleCellChange("eq", r.id, "category", e.target.value)} 
+                                        onChange={e => handleCellChange("eq", r._tempKey || r.id, "category", e.target.value)} 
                                         className="border rounded px-2 py-1 w-full md:w-36 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                       <div className="text-[10px] text-gray-400 mt-0.5">Оборуд.: Стол, Стул...</div>
@@ -1057,7 +1063,7 @@ export default function AdminPanel(){
                                         type="number" 
                                         min="1"
                                         value={r.quantity || 1} 
-                                        onChange={e => handleCellChange("eq", r.id, "quantity", parseInt(e.target.value) || 1)} 
+                                        onChange={e => handleCellChange("eq", r._tempKey || r.id, "quantity", parseInt(e.target.value) || 1)} 
                                         className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                     </td>
