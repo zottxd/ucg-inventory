@@ -455,6 +455,7 @@ export default function AdminPanel(){
           quantity: Number(row.quantity) || 1,
           location_id: Number(editLocation.id)
         }))
+        console.log('IT new payload:', newPayload)
         
         const { data: inserted, error: insertError } = await supabase
           .from("it_assets")
@@ -476,6 +477,7 @@ export default function AdminPanel(){
           quantity: Number(row.quantity) || 1,
           location_id: Number(editLocation.id)
         }))
+        console.log('IT update payload:', updatePayload)
         
         const { data: updated, error: updateError } = await supabase
           .from("it_assets")
@@ -502,6 +504,7 @@ export default function AdminPanel(){
           quantity: Number(row.quantity) || 1,
           location_id: Number(editLocation.id)
         }))
+        console.log('EQ new payload:', newPayload)
         
         const { data: inserted, error: insertError } = await supabase
           .from("equipment_assets")
@@ -523,6 +526,7 @@ export default function AdminPanel(){
           quantity: Number(row.quantity) || 1,
           location_id: Number(editLocation.id)
         }))
+        console.log('EQ update payload:', updatePayload)
         
         const { data: updated, error: updateError } = await supabase
           .from("equipment_assets")
