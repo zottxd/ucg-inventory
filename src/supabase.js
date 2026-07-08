@@ -8,7 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export async function fetchPagedAssets(table, locationId, page = 0, pageSize = 20) {
   return supabase
     .from(table)
-    .select('id, serial, category, model, quantity, notes, location_id, created_at', { count: 'exact' })
+    .select('*', { count: 'exact' })
     .eq('location_id', locationId)
     .order('created_at', { ascending: true })
     .order('id', { ascending: true })

@@ -201,11 +201,8 @@ const EquipmentTable = ({ title, rows }) => {
 
           {/* Модальное окно */}
           {selectedImage && (
-            <div 
-              className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
-              onClick={() => setSelectedImage(null)}
-            >
-              <img src={selectedImage} alt="Full size" className="max-w-full max-h-[90vh] rounded" />
+            <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
+              <img src={selectedImage} className="max-w-full max-h-[90vh] rounded"/>
             </div>
           )}
 

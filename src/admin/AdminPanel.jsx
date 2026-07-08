@@ -276,7 +276,7 @@ export default function AdminPanel(){
         serial: "",
         category: "",
         model: "",
-        quantity: 1,
+        quantity: "",
         notes: "",
         photo_url: null,
         location_id: Number(editLocation.id)
@@ -294,7 +294,7 @@ export default function AdminPanel(){
         serial: "",
         category: "",
         model: "",
-        quantity: 1,
+        quantity: "",
         notes: "",
         photo_url: null,
         location_id: Number(editLocation.id)
@@ -452,7 +452,7 @@ export default function AdminPanel(){
           model: (row.model || "").trim(),
           notes: (row.notes || "").trim(),
           photo_url: row.photo_url || null,
-          quantity: Number(row.quantity) || 1,
+          quantity: String(row.quantity || '1'),
           location_id: Number(editLocation.id)
         }))
         console.log('IT new payload:', newPayload)
@@ -474,7 +474,7 @@ export default function AdminPanel(){
           model: (row.model || "").trim(),
           notes: (row.notes || "").trim(),
           photo_url: row.photo_url || null,
-          quantity: Number(row.quantity) || 1,
+          quantity: String(row.quantity || '1'),
           location_id: Number(editLocation.id)
         }))
         console.log('IT update payload:', updatePayload)
@@ -501,7 +501,7 @@ export default function AdminPanel(){
           model: (row.model || "").trim(),
           notes: (row.notes || "").trim(),
           photo_url: row.photo_url || null,
-          quantity: Number(row.quantity) || 1,
+          quantity: String(row.quantity || '1'),
           location_id: Number(editLocation.id)
         }))
         console.log('EQ new payload:', newPayload)
@@ -523,7 +523,7 @@ export default function AdminPanel(){
           model: (row.model || "").trim(),
           notes: (row.notes || "").trim(),
           photo_url: row.photo_url || null,
-          quantity: Number(row.quantity) || 1,
+          quantity: String(row.quantity || '1'),
           location_id: Number(editLocation.id)
         }))
         console.log('EQ update payload:', updatePayload)
@@ -777,8 +777,8 @@ export default function AdminPanel(){
                                 <div>
                                   <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
                                   <input
-                                    type="number"
-                                    value={r.quantity || 1}
+                                    type="text"
+                                    value={r.quantity ?? ''}
                                     onChange={(e) => handleCellChange("it", r._tempKey || r.id, "quantity", e.target.value)}
                                     className="w-full px-3 py-2 border rounded w-20"
                                   />
@@ -859,10 +859,9 @@ export default function AdminPanel(){
                                     </td>
                                     <td className="px-3 py-2">
                                       <input 
-                                        type="number" 
-                                        min="1"
-                                        value={r.quantity || 1} 
-                                        onChange={e => handleCellChange("it", r._tempKey || r.id, "quantity", parseInt(e.target.value) || 1)} 
+                                        type="text"
+                                        value={r.quantity ?? ''} 
+                                        onChange={e => handleCellChange("it", r._tempKey || r.id, "quantity", e.target.value)} 
                                         className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                     </td>
@@ -982,8 +981,8 @@ export default function AdminPanel(){
                                 <div>
                                   <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
                                   <input
-                                    type="number"
-                                    value={r.quantity || 1}
+                                    type="text"
+                                    value={r.quantity ?? ''}
                                     onChange={(e) => handleCellChange("eq", r._tempKey || r.id, "quantity", e.target.value)}
                                     className="w-full px-3 py-2 border rounded w-20"
                                   />
@@ -1064,10 +1063,9 @@ export default function AdminPanel(){
                                     </td>
                                     <td className="px-3 py-2">
                                       <input 
-                                        type="number" 
-                                        min="1"
-                                        value={r.quantity || 1} 
-                                        onChange={e => handleCellChange("eq", r._tempKey || r.id, "quantity", parseInt(e.target.value) || 1)} 
+                                        type="text"
+                                        value={r.quantity ?? ''} 
+                                        onChange={e => handleCellChange("eq", r._tempKey || r.id, "quantity", e.target.value)} 
                                         className="border rounded px-2 py-1 w-full md:w-16 min-w-[60px] text-center focus:ring-1 focus:ring-orange-600 focus:outline-none"
                                       />
                                     </td>
