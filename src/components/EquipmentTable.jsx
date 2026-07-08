@@ -1,4 +1,16 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
+import { supabase } from '../supabase'
+
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(handler)
+  }, [value, delay])
+
+  return debouncedValue
+}
 
 const downloadCSV = (data = [], filename = 'export') => {
   const safeRows = Array.isArray(data) ? data : []
@@ -26,21 +38,93 @@ const downloadCSV = (data = [], filename = 'export') => {
   URL.revokeObjectURL(link.href)
 }
 
-const EquipmentTable = ({ title, rows }) => {
+const EquipmentTable = ({
+  title,
+  rows,
+  showLocationPicker = false,
+  locations: locationsProp = [],
+  onLocationSelect,
+  locationQuery = '',
+  onLocationQueryChange,
+}) => {
   const safeRows = Array.isArray(rows) ? rows : []
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [viewMode, setViewMode] = useState('list') // Default to list view
-  const [selectedImage, setSelectedImage] = useState(null) // State for full-size image modal
+  const [viewMode, setViewMode] = useState('list')
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [locations, setLocations] = useState(locationsProp)
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false)
+  const locationDropdownRef = useRef(null)
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
+  const debouncedLocationQuery = useDebounce(locationQuery, 300)
+
+  useEffect(() => {
+    setLocations(locationsProp)
+  }, [locationsProp])
+
+  useEffect(() => {
+    if (!showLocationPicker || locationsProp.length > 0) return
+
+    async function loadLocations() {
+      const { data, error } = await supabase
+        .from('locations')
+        .select('id, name, address')
+        .order('name')
+
+      if (!error) {
+        setLocations(data || [])
+      }
+    }
+
+    loadLocations()
+  }, [showLocationPicker, locationsProp.length])
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+        setShowLocationDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const filteredLocations = useMemo(() => {
+    const q = debouncedLocationQuery.trim().toLowerCase()
+    if (!q) return locations
+    return locations.filter(
+      (loc) =>
+        loc.name.toLowerCase().includes(q) ||
+        (loc.address && loc.address.toLowerCase().includes(q))
+    )
+  }, [locations, debouncedLocationQuery])
 
   const categories = useMemo(() => {
-    const unique = [...new Set(safeRows.map(row => row?.category).filter(Boolean))]
+    const unique = [...new Set(safeRows.map((row) => row?.category).filter(Boolean))]
     return unique
   }, [safeRows])
 
   const filteredRows = useMemo(() => {
-    if (selectedCategory === 'all') return safeRows
-    return safeRows.filter(row => row?.category === selectedCategory)
-  }, [safeRows, selectedCategory])
+    let result = safeRows
+
+    if (selectedCategory !== 'all') {
+      result = result.filter((row) => row?.category === selectedCategory)
+    }
+
+    const q = debouncedSearchQuery.trim().toLowerCase()
+    if (q) {
+      result = result.filter(
+        (row) =>
+          (row?.model || '').toLowerCase().includes(q) ||
+          (row?.serial || '').toLowerCase().includes(q) ||
+          (row?.category || '').toLowerCase().includes(q)
+      )
+    }
+
+    return result
+  }, [safeRows, selectedCategory, debouncedSearchQuery])
 
   const groupedByCategory = useMemo(() => {
     return filteredRows.reduce((acc, row) => {
@@ -62,10 +146,62 @@ const EquipmentTable = ({ title, rows }) => {
 
   const summaryItems = useMemo(() => Object.values(groupedByCategory), [groupedByCategory])
 
+  if (showLocationPicker) {
+    return (
+      <div className="w-full">
+        <div className="relative max-w-xl mx-auto" ref={locationDropdownRef}>
+          <input
+            type="text"
+            placeholder="🔍 Введите название объекта..."
+            value={locationQuery}
+            onChange={(e) => {
+              onLocationQueryChange?.(e.target.value)
+              setShowLocationDropdown(true)
+            }}
+            onFocus={() => setShowLocationDropdown(true)}
+            onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
+            className="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:outline-none transition bg-white shadow-sm"
+          />
+
+          {showLocationDropdown && filteredLocations.length > 0 && (
+            <div className="absolute mt-1 max-h-60 overflow-y-auto rounded shadow-lg border border-gray-200 w-full bg-white z-50">
+              {filteredLocations.map((loc) => (
+                <div
+                  key={loc.id}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onLocationSelect?.(loc)
+                    onLocationQueryChange?.(loc.name)
+                    setShowLocationDropdown(false)
+                  }}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 transition"
+                >
+                  <div className="font-medium text-gray-800">{loc.name}</div>
+                  {loc.address && <div className="text-sm text-gray-500">{loc.address}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {showLocationDropdown && debouncedLocationQuery && filteredLocations.length === 0 && (
+            <div className="absolute mt-1 w-full bg-white border rounded shadow-lg z-50 px-4 py-3 text-gray-500 text-center text-sm">
+              Ничего не найдено
+            </div>
+          )}
+        </div>
+
+        <div className="text-center py-10 text-gray-500 mt-4">
+          <p className="text-lg">🔍 Введите название объекта, чтобы посмотреть инвентарь</p>
+          <p className="text-sm mt-2">Например: &quot;Двинцев&quot;, &quot;АвтоВАЗ&quot;, &quot;Спортмастер&quot;</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-        <p className="text-sm text-gray-500">{safeRows.length} записей</p>
+        <p className="text-sm text-gray-500">{filteredRows.length} из {safeRows.length} записей</p>
         <button
           onClick={() => downloadCSV(filteredRows, title?.replace(/\s+/g, '_') || 'export')}
           className="w-full md:w-auto px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
@@ -75,6 +211,14 @@ const EquipmentTable = ({ title, rows }) => {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <input
+          type="text"
+          placeholder="🔍 Поиск по модели, серийнику, категории..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 px-4 py-2 border rounded bg-white"
+        />
+
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
@@ -98,7 +242,7 @@ const EquipmentTable = ({ title, rows }) => {
           className="px-4 py-2 border rounded bg-white"
         >
           <option value="all">Все категории</option>
-          {categories.map(cat => (
+          {categories.map((cat) => (
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
@@ -132,7 +276,6 @@ const EquipmentTable = ({ title, rows }) => {
 
       {viewMode === 'list' ? (
         <>
-          {/* Десктопная таблица */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
@@ -150,9 +293,11 @@ const EquipmentTable = ({ title, rows }) => {
                     <td className="border p-2 font-semibold">{row?.model || '-'}</td>
                     <td className="border p-2">
                       {row?.photo_url ? (
-                        <img 
-                          src={row.photo_url} 
-                          alt="Equipment" 
+                        <img
+                          src={row.photo_url}
+                          alt="Equipment"
+                          loading="lazy"
+                          decoding="async"
                           className="w-12 h-12 object-cover rounded cursor-pointer"
                           onClick={() => setSelectedImage(row.photo_url)}
                         />
@@ -169,16 +314,17 @@ const EquipmentTable = ({ title, rows }) => {
             </table>
           </div>
 
-          {/* Мобильные карточки */}
           <div className="md:hidden space-y-3">
             {filteredRows.map((row, index) => (
               <div key={row?.id || index} className="border rounded-lg p-4 bg-white shadow-sm">
                 <div className="flex items-center gap-3 mb-3">
                   {row?.photo_url ? (
-                    <img 
-                      src={row.photo_url} 
-                      alt="Equipment" 
-                      className="w-16 h-16 object-cover rounded"
+                    <img
+                      src={row.photo_url}
+                      alt="Equipment"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-16 h-16 object-cover rounded cursor-pointer"
                       onClick={() => setSelectedImage(row.photo_url)}
                     />
                   ) : (
@@ -199,10 +345,9 @@ const EquipmentTable = ({ title, rows }) => {
             ))}
           </div>
 
-          {/* Модальное окно */}
           {selectedImage && (
             <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
-              <img src={selectedImage} className="max-w-full max-h-[90vh] rounded"/>
+              <img src={selectedImage} decoding="async" className="max-w-full max-h-[90vh] rounded" alt="Просмотр" />
             </div>
           )}
 

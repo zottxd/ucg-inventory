@@ -1,15 +1,16 @@
 {
   "name": "UCG Inventory",
   "short_name": "UCG Inventory",
-  "start_url": "/",
+  "start_url": "/?v=202607090200",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1A2B49",
   "lang": "ru",
   "scope": "/",
+  "version": "202607090200",
   "icons": [
     {
-      "src": "/img/PWA иконка.svg",
+      "src": "/img/PWA иконка.svg?v=202607090200",
       "sizes": "192x192",
       "type": "image/svg+xml"
     }

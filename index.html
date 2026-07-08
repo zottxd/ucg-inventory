@@ -10,7 +10,7 @@
     
     <!-- Security Headers -->
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://stjgdteebhiejcvqckfu.supabase.co; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://stjgdteebhiejcvqckfu.supabase.co" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://supabase.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://supabase.co https://*.supabase.co blob:; connect-src 'self' https://*.supabase.co https://*.vercel.app; font-src 'self' data:;" />
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/img/Favicon 64x64.svg" />
@@ -19,12 +19,13 @@
     <!-- Preconnect & DNS Prefetch -->
     <link rel="preconnect" href="https://stjgdteebhiejcvqckfu.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://stjgdteebhiejcvqckfu.supabase.co" />
-    <link rel="preload" href="/src/main.jsx" as="script" />
+    <link rel="preload" href="/src/main.jsx?v=202607090200" as="script" />
+    <link rel="manifest" href="/manifest.webmanifest?v=202607090200" />
     
     <title>UCG Inventory - Система учета техники</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.jsx?v=202607090200"></script>
   </body>
 </html>

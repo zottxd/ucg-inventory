@@ -5,12 +5,26 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+const pagedAssetsCache = new Map();
+
 export async function fetchPagedAssets(table, locationId, page = 0, pageSize = 20) {
-  return supabase
+  const cacheKey = `${table}-${locationId}-${page}-${pageSize}`;
+
+  if (pagedAssetsCache.has(cacheKey)) {
+    return pagedAssetsCache.get(cacheKey);
+  }
+
+  const result = await supabase
     .from(table)
     .select('*', { count: 'exact' })
     .eq('location_id', locationId)
     .order('created_at', { ascending: true })
     .order('id', { ascending: true })
-    .range(page * pageSize, (page + 1) * pageSize - 1)
+    .range(page * pageSize, (page + 1) * pageSize - 1);
+
+  if (!result.error) {
+    pagedAssetsCache.set(cacheKey, result);
+  }
+
+  return result;
 }

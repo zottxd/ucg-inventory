@@ -1,5 +1,20 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { supabase } from '../supabase'
+
+function sanitizeInput(str) {
+  return String(str).replace(/[<>]/g, '').trim()
+}
+
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(handler)
+  }, [value, delay])
+
+  return debouncedValue
+}
 
 // Списки категорий для разделения техники
 const IT_CATEGORIES = ['Ноутбук','Компьютер','Монитор','Принтер','Сканер','Телефон','Роутер','Сервер','Планшет']
@@ -33,6 +48,7 @@ export default function AdminPanel(){
 
   const [editLocation, setEditLocation] = useState(null)
   const [locationSearch, setLocationSearch] = useState('')
+  const debouncedLocationSearch = useDebounce(locationSearch, 300)
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const locationDropdownRef = useRef(null)
 
@@ -177,10 +193,10 @@ export default function AdminPanel(){
     setErrorMessage('')
     try {
       const payload = { 
-        name: newLoc.name.trim(), 
-        address: newLoc.address.trim() 
+        name: sanitizeInput(newLoc.name), 
+        address: sanitizeInput(newLoc.address)
       }
-      if(newLoc.id.trim()) payload.id = newLoc.id.trim()
+      if(newLoc.id.trim()) payload.id = sanitizeInput(newLoc.id)
       
       const { data, error } = await supabase
         .from('locations')
@@ -447,12 +463,12 @@ export default function AdminPanel(){
       
       if (newITRows.length > 0) {
         const newPayload = newITRows.map(({_tempKey, ...row}) => ({
-          serial: (row.serial || "").trim(),
-          category: (row.category || "").trim(),
-          model: (row.model || "").trim(),
-          notes: (row.notes || "").trim(),
+          serial: sanitizeInput(row.serial),
+          category: sanitizeInput(row.category),
+          model: sanitizeInput(row.model),
+          notes: sanitizeInput(row.notes),
           photo_url: row.photo_url || null,
-          quantity: String(row.quantity || '1'),
+          quantity: String(sanitizeInput(row.quantity) || '1'),
           location_id: Number(editLocation.id)
         }))
         console.log('IT new payload:', newPayload)
@@ -469,12 +485,12 @@ export default function AdminPanel(){
       if (existingITRows.length > 0) {
         const updatePayload = existingITRows.map(row => ({
           id: Number(row.id),
-          serial: (row.serial || "").trim(),
-          category: (row.category || "").trim(),
-          model: (row.model || "").trim(),
-          notes: (row.notes || "").trim(),
+          serial: sanitizeInput(row.serial),
+          category: sanitizeInput(row.category),
+          model: sanitizeInput(row.model),
+          notes: sanitizeInput(row.notes),
           photo_url: row.photo_url || null,
-          quantity: String(row.quantity || '1'),
+          quantity: String(sanitizeInput(row.quantity) || '1'),
           location_id: Number(editLocation.id)
         }))
         console.log('IT update payload:', updatePayload)
@@ -496,12 +512,12 @@ export default function AdminPanel(){
       
       if (newEqRows.length > 0) {
         const newPayload = newEqRows.map(({_tempKey, ...row}) => ({
-          serial: (row.serial || "").trim(),
-          category: (row.category || "").trim(),
-          model: (row.model || "").trim(),
-          notes: (row.notes || "").trim(),
+          serial: sanitizeInput(row.serial),
+          category: sanitizeInput(row.category),
+          model: sanitizeInput(row.model),
+          notes: sanitizeInput(row.notes),
           photo_url: row.photo_url || null,
-          quantity: String(row.quantity || '1'),
+          quantity: String(sanitizeInput(row.quantity) || '1'),
           location_id: Number(editLocation.id)
         }))
         console.log('EQ new payload:', newPayload)
@@ -518,12 +534,12 @@ export default function AdminPanel(){
       if (existingEqRows.length > 0) {
         const updatePayload = existingEqRows.map(row => ({
           id: Number(row.id),
-          serial: (row.serial || "").trim(),
-          category: (row.category || "").trim(),
-          model: (row.model || "").trim(),
-          notes: (row.notes || "").trim(),
+          serial: sanitizeInput(row.serial),
+          category: sanitizeInput(row.category),
+          model: sanitizeInput(row.model),
+          notes: sanitizeInput(row.notes),
           photo_url: row.photo_url || null,
-          quantity: String(row.quantity || '1'),
+          quantity: String(sanitizeInput(row.quantity) || '1'),
           location_id: Number(editLocation.id)
         }))
         console.log('EQ update payload:', updatePayload)
@@ -585,12 +601,7 @@ export default function AdminPanel(){
               
               {showLocationDropdown && (
                 <div className="absolute mt-1 max-h-60 overflow-y-auto rounded shadow-lg border border-gray-200 w-full bg-white z-50">
-                  {locations
-                    .filter(loc =>
-                      loc.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
-                      (loc.address && loc.address.toLowerCase().includes(locationSearch.toLowerCase()))
-                    )
-                    .map(loc => (
+                  {filteredLocations.map(loc => (
                       <div
                         key={loc.id}
                         onClick={() => {
@@ -607,10 +618,7 @@ export default function AdminPanel(){
                       </div>
                     ))}
                   
-                  {locations.filter(loc =>
-                    loc.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
-                    (loc.address && loc.address.toLowerCase().includes(locationSearch.toLowerCase()))
-                  ).length === 0 && (
+                  {filteredLocations.length === 0 && (
                     <div className="px-4 py-3 text-gray-500 text-center text-sm">
                       Ничего не найдено
                     </div>

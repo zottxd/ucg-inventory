@@ -1,6 +1,14 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
 export default function Header({ user, userRole, onLogout }){
+  useEffect(() => {
+    const meta = document.createElement('meta')
+    meta.httpEquiv = 'Cache-Control'
+    meta.content = 'no-cache, no-store, must-revalidate'
+    document.head.appendChild(meta)
+    return () => meta.remove()
+  }, [])
+
   return (
     <header className="bg-white border-b px-4 md:px-8 py-3" style={{borderColor:'#e6e9ec'}}>
       <div className="max-w-[1200px] mx-auto flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

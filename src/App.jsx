@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
-import SearchAutocomplete from './components/SearchAutocomplete'
 import Skeleton from './components/Skeleton'
 import Auth from './Auth'
 import { supabase, fetchPagedAssets } from './supabase'
@@ -387,14 +386,17 @@ function App(){
           <div className="max-w-[1200px] mx-auto p-4 md:p-8">
             <div className="bg-[#f8f9fa] p-4 md:p-8 rounded shadow-sm">
               
-              {/* Компонент поиска */}
-              <SearchAutocomplete
-                value={query}
-                onChange={handleQueryChange}
-                onSelect={handleLocationSelect}
-                locations={locations}
-                placeholder="Введите название объекта..."
-              />
+              {/* Выбор объекта */}
+              {!selectedLocation ? (
+                <EquipmentTable
+                  showLocationPicker
+                  locations={locations}
+                  locationQuery={query}
+                  onLocationQueryChange={handleQueryChange}
+                  onLocationSelect={handleLocationSelect}
+                  rows={[]}
+                />
+              ) : null}
 
             {/* Сообщения об ошибках и загрузке */}
             {error && <div className="mt-4 p-3 bg-red-50 text-red-700 rounded text-sm">{error}</div>}
@@ -403,12 +405,7 @@ function App(){
             {loadingAssets && selectedLocation && <div className="mt-4 text-sm text-gray-600">Обновление данных...</div>}
 
             <div className="mt-6">
-              {!selectedLocation ? (
-                <div className="text-center py-10 text-gray-500">
-                  <p className="text-lg">🔍 Введите название объекта, чтобы посмотреть инвентарь</p>
-                  <p className="text-sm mt-2">Например: "Двинцев", "АвтоВАЗ", "Спортмастер"</p>
-                </div>
-              ) : (
+              {selectedLocation && (
                 <div>
                   {/* Заголовок выбранного объекта */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 bg-white p-4 rounded border">
