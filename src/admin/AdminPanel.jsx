@@ -37,6 +37,7 @@ function ConfirmModal({ open, title, onCancel, onConfirm }){
 
 export default function AdminPanel(){
   const [locations, setLocations] = useState([])
+  const [filteredLocations, setFilteredLocations] = useState([])
   const [itAssets, setItAssets] = useState([])
   const [nonItAssets, setNonItAssets] = useState([])
   const [showAdd, setShowAdd] = useState(false)
@@ -108,6 +109,7 @@ export default function AdminPanel(){
         }
 
         setLocations(data)
+        setFilteredLocations(data)
       } catch (err) {
         console.error('Load locations error:', err)
         const message = err?.message || String(err)
@@ -592,6 +594,11 @@ export default function AdminPanel(){
                 value={locationSearch}
                 onChange={(e) => {
                   setLocationSearch(e.target.value)
+                  const filtered = locations.filter(loc =>
+                    loc.name.toLowerCase().includes(e.target.value.toLowerCase()) ||
+                    loc.address?.toLowerCase().includes(e.target.value.toLowerCase())
+                  )
+                  setFilteredLocations(filtered)
                   setShowLocationDropdown(true)
                 }}
                 onFocus={() => setShowLocationDropdown(true)}
