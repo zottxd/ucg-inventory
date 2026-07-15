@@ -375,6 +375,22 @@ export default function AdminPanel({ locations: initialLocations }){
     const setRows = type === "it" ? setItAssets : setNonItAssets
     
     const row = rows[rowIndex]
+    
+    // Если это новая строка (без ID в БД), просто обновляем UI
+    // Фото будет сохранено в БД при нажатии кнопки "Сохранить"
+    if (!row || !row.id) {
+      setRows(prev => {
+        const updated = [...prev]
+        if (updated[rowIndex]) {
+          updated[rowIndex] = { ...updated[rowIndex], photo_url: publicUrl }
+        }
+        return updated
+      })
+      setStatusMessage("✅ Фото загружено (сохранится при сохранении записи)")
+      return
+    }
+    
+    // Для существующих строк обновляем сразу в БД
     const { error: updateError } = await supabase
       .from(tableName)
       .update({ photo_url: publicUrl })
@@ -414,6 +430,21 @@ export default function AdminPanel({ locations: initialLocations }){
     const setRows = type === "it" ? setItAssets : setNonItAssets
     
     const row = rows[rowIndex]
+    
+    // Если это новая строка (без ID в БД), просто обновляем UI
+    if (!row || !row.id) {
+      setRows(prev => {
+        const updated = [...prev]
+        if (updated[rowIndex]) {
+          updated[rowIndex] = { ...updated[rowIndex], photo_url: null }
+        }
+        return updated
+      })
+      setStatusMessage("✅ Фото удалено")
+      return
+    }
+    
+    // Для существующих строк обновляем в БД
     const { error: updateError } = await supabase
       .from(tableName)
       .update({ photo_url: null })
