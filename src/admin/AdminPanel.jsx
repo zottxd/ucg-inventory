@@ -35,9 +35,9 @@ function ConfirmModal({ open, title, onCancel, onConfirm }){
   )
 }
 
-export default function AdminPanel(){
-  const [locations, setLocations] = useState([])
-  const [filteredLocations, setFilteredLocations] = useState([])
+export default function AdminPanel({ locations: initialLocations }){
+  const [locations, setLocations] = useState(initialLocations || [])
+  const [filteredLocations, setFilteredLocations] = useState(initialLocations || [])
   const [itAssets, setItAssets] = useState([])
   const [nonItAssets, setNonItAssets] = useState([])
   const [showAdd, setShowAdd] = useState(false)
@@ -773,7 +773,7 @@ export default function AdminPanel(){
                                     type="text"
                                     value={r.serial || ""}
                                     onChange={(e) => handleCellChange("it", r._tempKey || r.id, "serial", e.target.value)}
-                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
+                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500" : ""}`}
                                     placeholder="Введите серийный номер"
                                   />
                                 </div>
@@ -857,7 +857,7 @@ export default function AdminPanel(){
                                       <input 
                                         value={r.serial || ""} 
                                         onChange={e => handleCellChange("it", r._tempKey || r.id, "serial", e.target.value)} 
-                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
+                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500" : ""}`}
                                         placeholder="DV-001"
                                       />
                                     </td>
@@ -977,7 +977,7 @@ export default function AdminPanel(){
                                     type="text"
                                     value={r.serial || ""}
                                     onChange={(e) => handleCellChange("eq", r._tempKey || r.id, "serial", e.target.value)}
-                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
+                                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500" : ""}`}
                                     placeholder="Введите серийный номер"
                                   />
                                 </div>
@@ -1061,7 +1061,7 @@ export default function AdminPanel(){
                                       <input 
                                         value={r.serial || ""} 
                                         onChange={e => handleCellChange("eq", r._tempKey || r.id, "serial", e.target.value)} 
-                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500 bg-red-50" : ""}`}
+                                        className={`border rounded px-2 py-1 w-full md:w-32 min-w-[60px] focus:ring-1 focus:ring-orange-600 focus:outline-none ${invalidRows.includes(r.id) ? "ring-2 ring-red-500 border-red-500" : ""}`}
                                         placeholder="FR-001"
                                       />
                                     </td>
@@ -1110,7 +1110,7 @@ export default function AdminPanel(){
                   <button 
                     onClick={handleSave} 
                     disabled={saving}
-                    className="w-full md:w-auto sticky bottom-4 z-20 px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full md:w-auto sticky bottom-4 z-20 px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition shadow disabled:opacity-50"
                   >
                     {saving ? (
                       <>
