@@ -16,8 +16,20 @@ const downloadCSV = (data = [], filename = 'export') => {
   const safeRows = Array.isArray(data) ? data : []
   const headers = ['Модель', 'Серийный номер', 'Категория', 'Количество']
 
-  const csvContent = [
-    headers.join(','),
+  // Экранирование значений: если содержит ; или ", оборачиваем в кавычки и удваиваем кавычки
+  const escapeCSVValue = (value) => {
+    const str = String(value).trim()
+    if (str.includes(';') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`
+    }
+    return str
+  }
+
+  // Создаём CSV с разделителем точка с запятой (;)
+  const csvLines = [
+    // Заголовок с BOM для правильной кодировки UTF-8
+    '\uFEFF' + headers.map(escapeCSVValue).join(';'),
+    // Строки данных
     ...safeRows.map((row) =>
       [
         row?.model || '',
@@ -25,11 +37,14 @@ const downloadCSV = (data = [], filename = 'export') => {
         row?.category || '',
         row?.quantity || ''
       ]
-        .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-        .join(',')
+        .map(escapeCSVValue)
+        .join(';')
     )
-  ].join('\n')
+  ]
 
+  const csvContent = csvLines.join('\n')
+
+  // Создаём Blob с правильной кодировкой UTF-8
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)
