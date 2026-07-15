@@ -12,9 +12,8 @@ function useDebounce(value, delay) {
   return debouncedValue
 }
 
-const downloadCSV = (data = [], filename = 'export') => {
+const downloadCSV = (data = [], filename = 'export', locationInfo = null) => {
   const safeRows = Array.isArray(data) ? data : []
-  const headers = ['Модель', 'Серийный номер', 'Категория', 'Количество']
 
   // Экранирование значений: если содержит ; или ", оборачиваем в кавычки и удваиваем кавычки
   const escapeCSVValue = (value) => {
@@ -25,21 +24,43 @@ const downloadCSV = (data = [], filename = 'export') => {
     return str
   }
 
+  // Формируем заголовки на основе наличия информации об объекте
+  const headers = ['Модель', 'Серийный номер', 'Категория', 'Количество']
+  if (locationInfo?.name || locationInfo?.address) {
+    headers.unshift('Объект')
+    if (locationInfo?.address) {
+      headers.push('Адрес')
+    }
+  }
+
   // Создаём CSV с разделителем точка с запятой (;)
   const csvLines = [
     // Заголовок с BOM для правильной кодировки UTF-8
     '\uFEFF' + headers.map(escapeCSVValue).join(';'),
     // Строки данных
-    ...safeRows.map((row) =>
-      [
+    ...safeRows.map((row) => {
+      const rowData = []
+
+      // Добавляем информацию об объекте в начало каждой строки
+      if (locationInfo?.name || locationInfo?.address) {
+        rowData.push(locationInfo?.name || '')
+      }
+
+      // Основные данные
+      rowData.push(
         row?.model || '',
         row?.serial || '',
         row?.category || '',
         row?.quantity || ''
-      ]
-        .map(escapeCSVValue)
-        .join(';')
-    )
+      )
+
+      // Добавляем адрес в конец строки (если нужен)
+      if (locationInfo?.address) {
+        rowData.push(locationInfo.address)
+      }
+
+      return rowData.map(escapeCSVValue).join(';')
+    })
   ]
 
   const csvContent = csvLines.join('\n')
@@ -61,6 +82,7 @@ const EquipmentTable = ({
   onLocationSelect,
   locationQuery = '',
   onLocationQueryChange,
+  locationInfo = null,
 }) => {
   const safeRows = Array.isArray(rows) ? rows : []
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -215,10 +237,18 @@ const EquipmentTable = ({
 
   return (
     <div className="w-full">
+      {/* Информация об объекте (если выбран) */}
+      {locationInfo?.name && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-900">
+          <span className="font-semibold">📍 Объект:</span> {locationInfo.name}
+          {locationInfo.address && <span className="block mt-1"><span className="font-semibold">📬 Адрес:</span> {locationInfo.address}</span>}
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
         <p className="text-sm text-gray-500">{filteredRows.length} из {safeRows.length} записей</p>
         <button
-          onClick={() => downloadCSV(filteredRows, title?.replace(/\s+/g, '_') || 'export')}
+          onClick={() => downloadCSV(filteredRows, title?.replace(/\s+/g, '_') || 'export', locationInfo)}
           className="w-full md:w-auto px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
         >
           📥 Скачать CSV
