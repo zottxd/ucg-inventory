@@ -205,12 +205,6 @@ export default function AdminPanel({ locations: initialLocations }){
       return
     }
     
-    if(newLoc.id.trim() && newLoc.id.trim().length < 2){
-      console.error('Validation error: id too short')
-      setErrorMessage('❌ ID объекта должен содержать минимум 2 символа')
-      return
-    }
-    
     setSaving(true)
     setErrorMessage('')
     setStatusMessage('')
@@ -220,7 +214,7 @@ export default function AdminPanel({ locations: initialLocations }){
         name: sanitizeInput(newLoc.name), 
         address: sanitizeInput(newLoc.address)
       }
-      if(newLoc.id.trim()) payload.id = sanitizeInput(newLoc.id)
+      // Supabase генерирует id автоматически, не добавляем его в payload
       
       console.log('Inserting location payload:', payload)
       
