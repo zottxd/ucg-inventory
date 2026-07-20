@@ -635,15 +635,8 @@ export default function AdminPanel({ locations: initialLocations }){
         savedEq = [...savedEq, ...updated]
       }
       
-      setItAssets(prev => {
-        const newRows = prev.filter(r => !r.id) // Удаляем пустые новые строки
-        return [...newRows, ...savedIT] // Добавляем сохранённые с реальными id
-      })
-      
-      setNonItAssets(prev => {
-        const newRows = prev.filter(r => !r.id) // Удаляем пустые новые строки
-        return [...newRows, ...savedEq] // Добавляем сохранённые с реальными id
-      })
+      // Перезагружаем данные из базы после сохранения для синхронизации состояния
+      await loadAssets(editLocation.id)
       
       setStatusMessage("✅ Изменения сохранены")
       
