@@ -49,7 +49,7 @@ export default function AdminPanel({ locations: initialLocations }){
 
   const [editLocation, setEditLocation] = useState(null)
   const [locationSearch, setLocationSearch] = useState('')
-  const debouncedLocationSearch = useDebounce(locationSearch, 300)
+  const debouncedLocationSearch = useDebounce(locationSearch, 100)
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const locationDropdownRef = useRef(null)
 
@@ -190,9 +190,31 @@ export default function AdminPanel({ locations: initialLocations }){
 
   // Создание нового объекта
   async function createLocation(){
-    if(!newLoc.name.trim()) return
+    console.log('createLocation called with:', newLoc)
+    
+    // Валидация полей
+    if(!newLoc.name.trim()){
+      console.error('Validation error: name is empty')
+      setErrorMessage('❌ Название объекта обязательно')
+      return
+    }
+    
+    if(newLoc.name.trim().length < 2){
+      console.error('Validation error: name too short')
+      setErrorMessage('❌ Название объекта должно содержать минимум 2 символа')
+      return
+    }
+    
+    if(newLoc.id.trim() && newLoc.id.trim().length < 2){
+      console.error('Validation error: id too short')
+      setErrorMessage('❌ ID объекта должен содержать минимум 2 символа')
+      return
+    }
+    
     setSaving(true)
     setErrorMessage('')
+    setStatusMessage('')
+    
     try {
       const payload = { 
         name: sanitizeInput(newLoc.name), 
@@ -200,21 +222,45 @@ export default function AdminPanel({ locations: initialLocations }){
       }
       if(newLoc.id.trim()) payload.id = sanitizeInput(newLoc.id)
       
+      console.log('Inserting location payload:', payload)
+      
       const { data, error } = await supabase
         .from('locations')
         .insert([payload])
         .select()
         .single()
       
-      if(error) throw error
+      console.log('Supabase insert result:', { data, error })
+      
+      if(error) {
+        console.error('Supabase insert error:', error)
+        throw error
+      }
+      
+      if(!data){
+        console.error('No data returned from insert')
+        throw new Error('No data returned from insert')
+      }
       
       setLocations(prev => [data, ...prev])
+      setFilteredLocations(prev => [data, ...prev])
       setNewLoc({name:'', address:'', id:''})
       setShowAdd(false)
       setStatusMessage('✅ Объект создан')
+      console.log('Location created successfully:', data)
     } catch (err) {
       console.error('Create location error:', err)
-      setErrorMessage('❌ Ошибка создания объекта')
+      const errorMsg = err?.message || String(err)
+      
+      if(errorMsg.includes('duplicate key') || errorMsg.includes('unique constraint')){
+        setErrorMessage('❌ Объект с таким ID уже существует')
+      } else if(errorMsg.includes('permission') || errorMsg.includes('401') || errorMsg.includes('403')){
+        setErrorMessage('❌ Ошибка доступа: недостаточно прав для создания объекта')
+      } else if(errorMsg.includes('does not exist')){
+        setErrorMessage('❌ Таблица locations не найдена')
+      } else {
+        setErrorMessage(`❌ Ошибка создания объекта: ${errorMsg}`)
+      }
     } finally {
       setSaving(false)
     }
@@ -489,8 +535,17 @@ export default function AdminPanel({ locations: initialLocations }){
       }
 
       // === IT ТЕХНИКА ===
-      const newITRows = itAssets.filter(row => !row.id)
-      const existingITRows = itAssets.filter(row => row.id)
+      // Фильтруем пустые строки перед сохранением
+      const hasMeaningfulData = (row) => {
+        return Boolean(
+          String(row?.serial || '').trim() ||
+          String(row?.model || '').trim() ||
+          String(row?.category || '').trim()
+        )
+      }
+      
+      const newITRows = itAssets.filter(row => !row.id && hasMeaningfulData(row))
+      const existingITRows = itAssets.filter(row => row.id && hasMeaningfulData(row))
       
       let savedIT = []
       
@@ -538,8 +593,8 @@ export default function AdminPanel({ locations: initialLocations }){
       }
       
       // === ОБОРУДОВАНИЕ ===
-      const newEqRows = nonItAssets.filter(row => !row.id)
-      const existingEqRows = nonItAssets.filter(row => row.id)
+      const newEqRows = nonItAssets.filter(row => !row.id && hasMeaningfulData(row))
+      const existingEqRows = nonItAssets.filter(row => row.id && hasMeaningfulData(row))
       
       let savedEq = []
       

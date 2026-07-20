@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Skeleton from './components/Skeleton'
 import Auth from './Auth'
 import { supabase, fetchPagedAssets } from './supabase'
-
-const AdminPanel = lazy(() => import('./admin/AdminPanel'))
-const EquipmentTable = lazy(() => import('./components/EquipmentTable'))
+import AdminPanel from './admin/AdminPanel'
+import EquipmentTable from './components/EquipmentTable'
 
 const PAGE_SIZE = 20
 const CACHE_KEY = 'ucg_locations_cache'
@@ -170,11 +169,6 @@ function App(){
     handleHash() // проверка при первой загрузке
     return ()=> window.removeEventListener('hashchange', handleHash)
   },[])
-
-  useEffect(() => {
-    import('./admin/AdminPanel')
-    import('./components/EquipmentTable')
-  }, [])
 
   // Загрузка списка объектов (локаций) при старте
   useEffect(() => {
@@ -367,9 +361,7 @@ function App(){
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Header user={user} userRole={userRole} onLogout={handleLogout} />
         <main className="flex-1">
-          <Suspense fallback={pageSuspenseFallback}>
-            <AdminPanel locations={locations} />
-          </Suspense>
+          <AdminPanel locations={locations} />
         </main>
         <Footer />
       </div>
@@ -382,8 +374,7 @@ function App(){
       <Header user={user} userRole={userRole} onLogout={handleLogout} />
 
       <main className="flex-1">
-        <Suspense fallback={pageSuspenseFallback}>
-          <div className="max-w-[1200px] mx-auto p-4 md:p-8">
+        <div className="max-w-[1200px] mx-auto p-4 md:p-8">
             <div className="bg-[#f8f9fa] p-4 md:p-8 rounded shadow-sm">
               
               {/* Выбор объекта */}
@@ -513,7 +504,6 @@ function App(){
             </div>
           </div>
         </div>
-      </Suspense>
       </main>
 
       <Footer />

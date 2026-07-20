@@ -93,8 +93,8 @@ const EquipmentTable = ({
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const locationDropdownRef = useRef(null)
 
-  const debouncedSearchQuery = useDebounce(searchQuery, 300)
-  const debouncedLocationQuery = useDebounce(locationQuery, 300)
+  const debouncedSearchQuery = useDebounce(searchQuery, 100)
+  const debouncedLocationQuery = useDebounce(locationQuery, 100)
 
   useEffect(() => {
     setLocations(locationsProp)
