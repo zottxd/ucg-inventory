@@ -13,12 +13,19 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/stjgdteebhiejcvqckfu\.supabase\.co\/.*$/i,
+            // Только статичные файлы (фото техники) можно отдавать из кеша.
+            // Данные REST/Auth кешировать нельзя: удалённые строки возвращались
+            // из кеша service worker после сохранения или перезагрузки страницы.
+            urlPattern: /^https:\/\/stjgdteebhiejcvqckfu\.supabase\.co\/storage\/v1\/object\/public\/.*$/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'supabase-cache',
+              cacheName: 'supabase-storage-cache',
               expiration: { maxEntries: 50, maxAgeSeconds: 300 }
             }
+          },
+          {
+            urlPattern: /^https:\/\/stjgdteebhiejcvqckfu\.supabase\.co\/(rest|auth)\/.*$/i,
+            handler: 'NetworkOnly'
           }
         ]
       }

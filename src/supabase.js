@@ -28,3 +28,15 @@ export async function fetchPagedAssets(table, locationId, page = 0, pageSize = 2
 
   return result;
 }
+
+export function invalidateAssetsCache(table, locationId) {
+  if (!table) {
+    pagedAssetsCache.clear();
+    return;
+  }
+
+  const prefix = locationId == null ? `${table}-` : `${table}-${locationId}-`;
+  for (const key of Array.from(pagedAssetsCache.keys())) {
+    if (key.startsWith(prefix)) pagedAssetsCache.delete(key);
+  }
+}

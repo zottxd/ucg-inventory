@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { supabase } from '../supabase'
+import { supabase, invalidateAssetsCache } from '../supabase'
 
 function sanitizeInput(str) {
   return String(str).replace(/[<>]/g, '').trim()
@@ -361,31 +361,60 @@ export default function AdminPanel({ locations: initialLocations }){
   }
 
   // Удаление строки
-  async function deleteRow(type, id){
-    if (type === 'it') {
-      setItAssets(prev => prev.filter(r => r.id !== id))
-    } else {
-      setNonItAssets(prev => prev.filter(r => r.id !== id))
-    }
-    
-    if(!id || String(id).startsWith('new-')){
+  async function deleteRow(type, row){
+    if(!row) return
+
+    const id = row.id
+    console.log('Deleting row:', { id, type, tempKey: row._tempKey })
+
+    // Новая строка, ещё не сохранённая в базе — убираем только из состояния
+    if(!id){
+      const removeTempRow = prev => prev.filter(r => r !== row)
+      if (type === 'it') {
+        setItAssets(removeTempRow)
+      } else {
+        setNonItAssets(removeTempRow)
+      }
       setStatusMessage('🗑 Строка удалена')
       return
     }
-    
+
     const tableName = type === 'it' ? 'it_assets' : 'equipment_assets'
+    setSaving(true)
+    setErrorMessage('')
+    setStatusMessage('')
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from(tableName)
         .delete()
         .eq('id', id)
-      
+        .select()
+
+      console.log('Delete result:', { data, error })
+
       if(error) throw error
+
+      // Supabase не возвращает ошибку, если строку не дала удалить RLS-политика:
+      // запрос успешен, но не затронул ни одной строки
+      if(!data || data.length === 0){
+        throw new Error('строка не удалена из базы (недостаточно прав или строки уже нет). Войдите под учётной записью администратора и повторите.')
+      }
+
+      invalidateAssetsCache(tableName, row.location_id)
+
+      if (type === 'it') {
+        setItAssets(prev => prev.filter(r => r.id !== id))
+      } else {
+        setNonItAssets(prev => prev.filter(r => r.id !== id))
+      }
+
       setStatusMessage('🗑 Строка удалена из базы')
     } catch (err) {
       console.error('Delete row error:', err)
-      setErrorMessage('❌ Ошибка удаления строки')
-      loadAssets(editLocation.id)
+      setErrorMessage(`❌ Ошибка удаления строки: ${err.message || err}`)
+      if(editLocation?.id) await loadAssets(editLocation.id)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -635,6 +664,9 @@ export default function AdminPanel({ locations: initialLocations }){
         savedEq = [...savedEq, ...updated]
       }
       
+      invalidateAssetsCache('it_assets', Number(editLocation.id))
+      invalidateAssetsCache('equipment_assets', Number(editLocation.id))
+
       // Перезагружаем данные из базы после сохранения для синхронизации состояния
       await loadAssets(editLocation.id)
       
@@ -793,7 +825,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                   <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
                                   <button
                                     type="button"
-                                    onClick={() => deleteRow("it", r.id)}
+                                    onClick={() => deleteRow("it", r)}
                                     className="text-red-500 p-2 rounded hover:bg-red-50"
                                   >
                                     🗑️
@@ -955,7 +987,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                     </td>
                                     <td className="px-3 py-2 text-center">
                                       <button 
-                                        onClick={() => deleteRow("it", r.id)} 
+                                        onClick={() => deleteRow("it", r)} 
                                         className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
                                         title="Удалить строку"
                                       >
@@ -997,7 +1029,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                   <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
                                   <button
                                     type="button"
-                                    onClick={() => deleteRow("eq", r.id)}
+                                    onClick={() => deleteRow("eq", r)}
                                     className="text-red-500 p-2 rounded hover:bg-red-50"
                                   >
                                     🗑️
@@ -1159,7 +1191,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                     </td>
                                     <td className="px-3 py-2 text-center">
                                       <button 
-                                        onClick={() => deleteRow("eq", r.id)} 
+                                        onClick={() => deleteRow("eq", r)} 
                                         className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
                                         title="Удалить строку"
                                       >
