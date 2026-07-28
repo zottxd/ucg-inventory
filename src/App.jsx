@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Skeleton from './components/Skeleton'
+import ScrollToTop from './components/ScrollToTop'
+import CookieConsent from './components/CookieConsent'
 import Auth from './Auth'
 import { supabase, fetchPagedAssets } from './supabase'
 import AdminPanel from './admin/AdminPanel'
@@ -512,4 +514,12 @@ function App(){
 }
 
 // ЕДИНСТВЕННЫЙ экспорт (исправляет ошибку "Only one default export allowed")
-export default App;
+export default function Root(){
+  return (
+    <>
+      <App />
+      <ScrollToTop />
+      <CookieConsent />
+    </>
+  )
+}

@@ -13,7 +13,9 @@ export default function Header({ user, userRole, onLogout }){
     <header className="bg-white border-b px-4 md:px-8 py-3" style={{borderColor:'#e6e9ec'}}>
       <div className="max-w-[1200px] mx-auto flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <img src="/img/Логотип в шапке.svg" alt="UCG INVENTORY" className="h-10" />
+          <a href="#/" className="cursor-pointer" aria-label="UCG INVENTORY — на главную">
+            <img src="/img/Логотип в шапке.svg" alt="UCG INVENTORY" className="h-10" />
+          </a>
         </div>
 
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
