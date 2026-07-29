@@ -96,10 +96,10 @@ export default function Auth({ onAuthSuccess }) {
   }
 
   return (
-    <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg">
+    <div className="w-full max-w-md p-8 bg-white dark:bg-slate-900 rounded-xl shadow-lg">
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-900">UCG Inventory</h2>
-        <p className="text-gray-600 mt-2">Корпоративная система учета техники</p>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">UCG Inventory</h2>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">Корпоративная система учета техники</p>
       </div>
 
       {error && (

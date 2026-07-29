@@ -6,6 +6,8 @@ import Auth from './Auth'
 import { supabase, fetchPagedAssets } from './supabase'
 import AdminPanel from './admin/AdminPanel'
 import EquipmentTable from './components/EquipmentTable'
+import ScrollToTop from './components/ScrollToTop'
+import CookieConsent from './components/CookieConsent'
 
 const PAGE_SIZE = 20
 const CACHE_KEY = 'ucg_locations_cache'
@@ -34,7 +36,7 @@ function setCachedLocations(data){
   }
 }
 
-function App(){
+function AppContent(){
   const [query, setQuery] = useState('')
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [locations, setLocations] = useState([])
@@ -313,9 +315,9 @@ function App(){
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <div className="text-xl font-semibold text-slate-900">Загрузка...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
+        <div className="rounded-xl border border-slate-200 bg-white dark:bg-slate-900 p-8 text-center shadow-sm">
+          <div className="text-xl font-semibold text-slate-900 dark:text-white">Загрузка...</div>
           <p className="mt-2 text-sm text-slate-500">Пожалуйста, подождите.</p>
         </div>
       </div>
@@ -324,7 +326,7 @@ function App(){
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
         <Auth onAuthSuccess={handleAuthSuccess} />
       </div>
     )
@@ -332,7 +334,7 @@ function App(){
 
   if (isAdminView && userRole !== 'admin') {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900 dark:text-white">
         <Header user={user} userRole={userRole} onLogout={handleLogout} />
         <main className="flex-1">
           <div className="max-w-[900px] mx-auto p-4 md:p-8">
@@ -358,7 +360,7 @@ function App(){
   // Если открыта Админка и пользователь — админ
   if (isAdminView) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900 dark:text-white">
         <Header user={user} userRole={userRole} onLogout={handleLogout} />
         <main className="flex-1">
           <AdminPanel locations={locations} />
@@ -370,12 +372,12 @@ function App(){
 
   // Если открыт Каталог — показываем поиск и таблицы
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900 dark:text-white">
       <Header user={user} userRole={userRole} onLogout={handleLogout} />
 
       <main className="flex-1">
         <div className="max-w-[1200px] mx-auto p-4 md:p-8">
-            <div className="bg-[#f8f9fa] p-4 md:p-8 rounded shadow-sm">
+            <div className="bg-[#f8f9fa] dark:bg-slate-800 p-4 md:p-8 rounded shadow-sm">
               
               {/* Выбор объекта */}
               {!selectedLocation ? (
@@ -392,23 +394,23 @@ function App(){
             {/* Сообщения об ошибках и загрузке */}
             {error && <div className="mt-4 p-3 bg-red-50 text-red-700 rounded text-sm">{error}</div>}
             
-            {loadingLocations && <div className="mt-4 text-sm text-gray-600">Загрузка объектов...</div>}
-            {loadingAssets && selectedLocation && <div className="mt-4 text-sm text-gray-600">Обновление данных...</div>}
+            {loadingLocations && <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">Загрузка объектов...</div>}
+            {loadingAssets && selectedLocation && <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">Обновление данных...</div>}
 
             <div className="mt-6">
               {selectedLocation && (
                 <div>
                   {/* Заголовок выбранного объекта */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 bg-white p-4 rounded border">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 bg-white dark:bg-slate-900 p-4 rounded border border-gray-200 dark:border-slate-700">
                     <div>
                       <h2 className="text-xl font-bold text-blue-800">📍 {selectedLocation.name}</h2>
                       {selectedLocation.address && (
-                        <p className="text-sm text-gray-500 mt-1">{selectedLocation.address}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedLocation.address}</p>
                       )}
                     </div>
                     <button 
                       onClick={()=>{ setSelectedLocation(null); setQuery(''); }} 
-                      className="mt-3 sm:mt-0 text-sm px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+                      className="mt-3 sm:mt-0 text-sm px-4 py-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-50 transition"
                     >
                       ✕ Сбросить выбор
                     </button>
@@ -423,7 +425,7 @@ function App(){
                         className={`px-4 py-2 rounded font-medium transition ${
                           activeTab === 'it'
                             ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
                         }`}
                       >
                         💻 IT ТЕХНИКА
@@ -434,7 +436,7 @@ function App(){
                         className={`px-4 py-2 rounded font-medium transition ${
                           activeTab === 'equipment'
                             ? 'bg-green-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
                         }`}
                       >
                         🏭 ОБОРУДОВАНИЕ
@@ -452,17 +454,17 @@ function App(){
                           <button
                             onClick={() => loadAssetPage('it', Math.max(0, page.it - 1))}
                             disabled={page.it === 0}
-                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                            className="px-3 py-1 bg-gray-200 dark:bg-slate-700 rounded disabled:opacity-50"
                           >
                             ← Назад
                           </button>
-                          <span className="px-3 py-1 text-sm text-gray-700">
+                          <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
                             Страница {page.it + 1} из {Math.max(1, Math.ceil(itCount / PAGE_SIZE))}
                           </span>
                           <button
                             onClick={() => loadAssetPage('it', page.it + 1)}
                             disabled={(page.it + 1) * PAGE_SIZE >= itCount}
-                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                            className="px-3 py-1 bg-gray-200 dark:bg-slate-700 rounded disabled:opacity-50"
                           >
                             Вперёд →
                           </button>
@@ -481,17 +483,17 @@ function App(){
                           <button
                             onClick={() => loadAssetPage('equipment', Math.max(0, page.equipment - 1))}
                             disabled={page.equipment === 0}
-                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                            className="px-3 py-1 bg-gray-200 dark:bg-slate-700 rounded disabled:opacity-50"
                           >
                             ← Назад
                           </button>
-                          <span className="px-3 py-1 text-sm text-gray-700">
+                          <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
                             Страница {page.equipment + 1} из {Math.max(1, Math.ceil(equipmentCount / PAGE_SIZE))}
                           </span>
                           <button
                             onClick={() => loadAssetPage('equipment', page.equipment + 1)}
                             disabled={(page.equipment + 1) * PAGE_SIZE >= equipmentCount}
-                            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+                            className="px-3 py-1 bg-gray-200 dark:bg-slate-700 rounded disabled:opacity-50"
                           >
                             Вперёд →
                           </button>
@@ -508,6 +510,16 @@ function App(){
 
       <Footer />
     </div>
+  )
+}
+
+function App(){
+  return (
+    <>
+      <AppContent />
+      <ScrollToTop />
+      <CookieConsent />
+    </>
   )
 }
 
