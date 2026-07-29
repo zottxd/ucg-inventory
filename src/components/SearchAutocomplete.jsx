@@ -108,7 +108,7 @@ export default function SearchAutocomplete({
 
   return (
     <div className="relative max-w-xl mx-auto" ref={ref}>
-      <div className="flex items-center bg-white px-3 py-2 rounded shadow">
+      <div className="flex items-center bg-white dark:bg-slate-900 px-3 py-2 rounded shadow">
         <input
           value={value}
           onChange={e=>{ setIsFocused(true); onChange && onChange(e.target.value) }}
@@ -131,7 +131,7 @@ export default function SearchAutocomplete({
               setOpen(false)
               setMatches([])
             }} 
-            className="text-gray-500 px-2 hover:text-gray-700"
+            className="text-gray-500 dark:text-gray-400 px-2 hover:text-gray-700"
           >
             ✕
           </button>
@@ -139,17 +139,17 @@ export default function SearchAutocomplete({
       </div>
 
       {open && matches.length > 0 && (
-        <div className="absolute left-0 right-0 mt-2 bg-white border rounded shadow max-h-64 overflow-auto z-50">
-          <div className="px-3 py-2 text-sm text-gray-600">Найдено: {matches.length} объектов</div>
+        <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border rounded shadow max-h-64 overflow-auto z-50">
+          <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">Найдено: {matches.length} объектов</div>
           {matches.map((m,i)=> (
             <div 
               key={m.name + i} 
               onClick={() => select(m)}
               onMouseDown={(e) => e.preventDefault()} // Предотвращаем потерю фокуса
-              className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${i===active? 'bg-gray-100':''}`}
+              className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${i===active? 'bg-gray-100 dark:bg-slate-800':''}`}
             >
               <div>{highlight(m.name, value)}</div>
-              {m.address && <div className="text-xs text-gray-500">{m.address}</div>}
+              {m.address && <div className="text-xs text-gray-500 dark:text-gray-400">{m.address}</div>}
             </div>
           ))}
         </div>

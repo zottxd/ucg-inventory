@@ -24,7 +24,7 @@ function ConfirmModal({ open, title, onCancel, onConfirm }){
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center">
       <div onClick={onCancel} className="absolute inset-0 bg-black/40" />
-      <div className="bg-white rounded p-6 z-50 max-w-md w-full">
+      <div className="bg-white dark:bg-slate-900 rounded p-6 z-50 max-w-md w-full">
         <h3 className="font-semibold mb-4">{title}</h3>
         <div className="flex justify-end gap-2">
           <button onClick={onCancel} className="px-3 py-1 border rounded">Отмена</button>
@@ -649,14 +649,14 @@ export default function AdminPanel({ locations: initialLocations }){
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-800">
       <main className="max-w-[1200px] mx-auto p-4 md:p-8">
         <h1 className="text-2xl font-semibold mb-6 text-blue-800">⚙️ ПАНЕЛЬ АДМИНИСТРАТОРА</h1>
 
         {errorMessage && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded border border-red-200">{errorMessage}</div>}
         {statusMessage && <div className="mb-4 p-3 bg-green-50 text-green-700 rounded border border-green-200">{statusMessage}</div>}
 
-        <section className="bg-white rounded-lg shadow p-4">
+        <section className="bg-white dark:bg-slate-900 rounded-lg shadow p-4">
           <h2 className="font-semibold text-lg mb-4">✏️ Редактор техники</h2>
           
           <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-6">
@@ -676,11 +676,11 @@ export default function AdminPanel({ locations: initialLocations }){
                 }}
                 onFocus={() => setShowLocationDropdown(true)}
                 onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
-                className="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:outline-none transition"
+                className="w-full border border-gray-300 dark:border-slate-600 rounded px-4 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent focus:outline-none transition"
               />
               
               {showLocationDropdown && (
-                <div className="absolute mt-1 max-h-60 overflow-y-auto rounded shadow-lg border border-gray-200 w-full bg-white z-50">
+                <div className="absolute mt-1 max-h-60 overflow-y-auto rounded shadow-lg border border-gray-200 dark:border-slate-700 w-full bg-white dark:bg-slate-900 z-50">
                   {filteredLocations.map(loc => (
                       <div
                         key={loc.id}
@@ -691,15 +691,15 @@ export default function AdminPanel({ locations: initialLocations }){
                         }}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 transition"
                       >
-                        <div className="font-medium text-gray-800">{loc.name}</div>
+                        <div className="font-medium text-gray-800 dark:text-gray-100">{loc.name}</div>
                         {loc.address && (
-                          <div className="text-sm text-gray-500">{loc.address}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{loc.address}</div>
                         )}
                       </div>
                     ))}
                   
                   {filteredLocations.length === 0 && (
-                    <div className="px-4 py-3 text-gray-500 text-center text-sm">
+                    <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-center text-sm">
                       Ничего не найдено
                     </div>
                   )}
@@ -727,7 +727,7 @@ export default function AdminPanel({ locations: initialLocations }){
           </div>
 
           {!editLocation ? (
-            <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-lg">
+            <div className="text-center py-10 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800 rounded-lg">
               <p className="text-lg">👆 Выберите объект, чтобы начать редактирование</p>
             </div>
           ) : (
@@ -740,7 +740,7 @@ export default function AdminPanel({ locations: initialLocations }){
               </div>
 
               {loadingAssets ? (
-                <div className="p-8 text-center text-gray-600">Загрузка техники...</div>
+                <div className="p-8 text-center text-gray-600 dark:text-gray-400">Загрузка техники...</div>
               ) : (
                 <div>
                   <div className="flex gap-2 mb-4" data-ignore-autocomplete="true">
@@ -750,7 +750,7 @@ export default function AdminPanel({ locations: initialLocations }){
                       className={`px-4 py-2 rounded font-medium transition ${
                         activeTab === 'it'
                           ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
                       }`}
                     >
                       💻 IT ТЕХНИКА
@@ -761,7 +761,7 @@ export default function AdminPanel({ locations: initialLocations }){
                       className={`px-4 py-2 rounded font-medium transition ${
                         activeTab === 'equipment'
                           ? 'bg-green-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
                       }`}
                     >
                       🏭 ОБОРУДОВАНИЕ
@@ -769,8 +769,8 @@ export default function AdminPanel({ locations: initialLocations }){
                   </div>
 
                   {activeTab === 'it' && (
-                    <div className="bg-white rounded-lg border shadow-sm mb-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
+                    <div className="bg-white dark:bg-slate-900 rounded-lg border shadow-sm mb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 dark:bg-slate-800 rounded-t-lg">
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={addItRow} 
@@ -783,14 +783,14 @@ export default function AdminPanel({ locations: initialLocations }){
                       </div>
 
                       {itAssets.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">Нет IT техники для этого объекта</div>
+                        <div className="p-8 text-center text-gray-500 dark:text-gray-400">Нет IT техники для этого объекта</div>
                       ) : (
                         <>
                           <div className="md:hidden space-y-4">
                             {itAssets.map((r, index) => (
-                              <div key={r._tempKey || r.id} className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
+                              <div key={r._tempKey || r.id} className="border rounded-lg p-4 bg-white dark:bg-slate-900 shadow-sm space-y-4">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
+                                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Запись #{index + 1}</span>
                                   <button
                                     type="button"
                                     onClick={() => deleteRow("it", r.id)}
@@ -801,7 +801,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Модель</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Модель</label>
                                   <input
                                     type="text"
                                     value={r.model || ""}
@@ -811,7 +811,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Изображение устройства</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Изображение устройства</label>
                                   {r.photo_url ? (
                                     <div className="relative group w-24 h-24">
                                       <img 
@@ -828,7 +828,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                       </button>
                                     </div>
                                   ) : (
-                                    <label className="flex items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 text-blue-500 text-sm">
+                                    <label className="flex items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded cursor-pointer hover:bg-gray-50 text-blue-500 text-sm">
                                       📷 Загрузить
                                       <input
                                         type="file"
@@ -841,7 +841,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Серийник *</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Серийник *</label>
                                   <input
                                     type="text"
                                     value={r.serial || ""}
@@ -852,7 +852,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Категория *</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Категория *</label>
                                   <input
                                     type="text"
                                     value={r.category || ""}
@@ -863,7 +863,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Кол-во</label>
                                   <input
                                     type="text"
                                     value={r.quantity ?? ''}
@@ -877,8 +877,8 @@ export default function AdminPanel({ locations: initialLocations }){
 
                           <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-sm">
-                              <thead className="bg-gray-50">
-                                <tr className="text-left text-gray-600 border-b">
+                              <thead className="bg-gray-50 dark:bg-slate-800">
+                                <tr className="text-left text-gray-600 dark:text-gray-400 border-b">
                                   <th className="px-3 py-2">Модель</th>
                                   <th className="px-3 py-2">Фото</th>
                                   <th className="px-3 py-2">Серийник *</th>
@@ -973,8 +973,8 @@ export default function AdminPanel({ locations: initialLocations }){
                   )}
 
                   {activeTab === 'equipment' && (
-                    <div className="bg-white rounded-lg border shadow-sm">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 rounded-t-lg">
+                    <div className="bg-white dark:bg-slate-900 rounded-lg border shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 dark:bg-slate-800 rounded-t-lg">
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={addNonItRow} 
@@ -987,14 +987,14 @@ export default function AdminPanel({ locations: initialLocations }){
                       </div>
 
                       {nonItAssets.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">Нет оборудования для этого объекта</div>
+                        <div className="p-8 text-center text-gray-500 dark:text-gray-400">Нет оборудования для этого объекта</div>
                       ) : (
                         <>
                           <div className="md:hidden space-y-4">
                             {nonItAssets.map((r, index) => (
-                              <div key={r._tempKey || r.id} className="border rounded-lg p-4 bg-white shadow-sm space-y-4">
+                              <div key={r._tempKey || r.id} className="border rounded-lg p-4 bg-white dark:bg-slate-900 shadow-sm space-y-4">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm font-semibold text-gray-600">Запись #{index + 1}</span>
+                                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Запись #{index + 1}</span>
                                   <button
                                     type="button"
                                     onClick={() => deleteRow("eq", r.id)}
@@ -1005,7 +1005,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Модель</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Модель</label>
                                   <input
                                     type="text"
                                     value={r.model || ""}
@@ -1015,7 +1015,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Изображение устройства</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Изображение устройства</label>
                                   {r.photo_url ? (
                                     <div className="relative group w-24 h-24">
                                       <img 
@@ -1032,7 +1032,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                       </button>
                                     </div>
                                   ) : (
-                                    <label className="flex items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50 text-blue-500 text-sm">
+                                    <label className="flex items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded cursor-pointer hover:bg-gray-50 text-blue-500 text-sm">
                                       📷 Загрузить
                                       <input
                                         type="file"
@@ -1045,7 +1045,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Серийник *</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Серийник *</label>
                                   <input
                                     type="text"
                                     value={r.serial || ""}
@@ -1056,7 +1056,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Категория *</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Категория *</label>
                                   <input
                                     type="text"
                                     value={r.category || ""}
@@ -1067,7 +1067,7 @@ export default function AdminPanel({ locations: initialLocations }){
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Кол-во</label>
+                                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Кол-во</label>
                                   <input
                                     type="text"
                                     value={r.quantity ?? ''}
@@ -1081,8 +1081,8 @@ export default function AdminPanel({ locations: initialLocations }){
 
                           <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-sm">
-                              <thead className="bg-gray-50">
-                                <tr className="text-left text-gray-600 border-b">
+                              <thead className="bg-gray-50 dark:bg-slate-800">
+                                <tr className="text-left text-gray-600 dark:text-gray-400 border-b">
                                   <th className="px-3 py-2">Модель</th>
                                   <th className="px-3 py-2">Фото</th>
                                   <th className="px-3 py-2">Серийник *</th>
@@ -1216,11 +1216,11 @@ export default function AdminPanel({ locations: initialLocations }){
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={()=>setShowAdd(false)} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="bg-white rounded-xl shadow-2xl z-50 max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl z-50 max-w-md w-full p-6">
             <h3 className="text-lg font-semibold mb-4 text-blue-800">➕ Добавить объект</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Название объекта *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название объекта *</label>
                 <input 
                   value={newLoc.name} 
                   onChange={e => setNewLoc(s => ({...s, name: e.target.value}))} 
@@ -1230,7 +1230,7 @@ export default function AdminPanel({ locations: initialLocations }){
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Адрес</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Адрес</label>
                 <input 
                   value={newLoc.address} 
                   onChange={e => setNewLoc(s => ({...s, address: e.target.value}))} 
@@ -1239,7 +1239,7 @@ export default function AdminPanel({ locations: initialLocations }){
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Идентификатор <span className="text-gray-400 font-normal">(опционально)</span></label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Идентификатор <span className="text-gray-400 font-normal">(опционально)</span></label>
                 <input 
                   value={newLoc.id} 
                   onChange={e => setNewLoc(s => ({...s, id: e.target.value}))} 
