@@ -48,7 +48,7 @@ export default function Header({ user, userRole, onLogout }){
                 <span className="text-sm text-gray-600 truncate dark:text-gray-400">{user.email}</span>
                 <button
                   onClick={onLogout}
-                  className="px-2 md:px-4 py-1 border border-gray-200 rounded text-sm text-slate-700 bg-white transition-all duration-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700"
+                  className="px-2 md:px-4 py-1 border border-gray-200 rounded text-sm text-slate-700 bg-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700"
                 >
                   Выйти
                 </button>

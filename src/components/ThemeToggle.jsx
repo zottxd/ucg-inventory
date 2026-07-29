@@ -10,10 +10,10 @@ export function getInitialTheme(){
     // ignore localStorage read failures
   }
   if (typeof window !== 'undefined' && window.matchMedia
-    && window.matchMedia('(prefers-color-scheme: light)').matches) {
-    return 'light'
+    && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark'
   }
-  return 'dark'
+  return 'light'
 }
 
 export function applyTheme(theme){
