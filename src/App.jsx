@@ -51,8 +51,8 @@ function AppContent(){
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('it') // 'it' или 'equipment'
 
-  const [user, setUser] = useState(window.__TEST_BYPASS__ ? { email: 'test@ucg.local', id: 'test' } : null)
-  const [userRole, setUserRole] = useState(window.__TEST_BYPASS__ ? 'admin' : null)
+  const [user, setUser] = useState(null)
+  const [userRole, setUserRole] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [authError, setAuthError] = useState('')
 
@@ -324,7 +324,7 @@ function AppContent(){
     )
   }
 
-  if (!user && !window.__TEST_BYPASS__) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
         <Auth onAuthSuccess={handleAuthSuccess} />

@@ -27,14 +27,17 @@ export default function ThemeToggle(){
 
   useEffect(() => {
     applyTheme(theme)
+  }, [theme])
+
+  const toggle = () => setTheme(prev => {
+    const next = prev === 'dark' ? 'light' : 'dark'
     try {
-      localStorage.setItem(STORAGE_KEY, theme)
+      localStorage.setItem(STORAGE_KEY, next)
     } catch (err) {
       // ignore localStorage write failures
     }
-  }, [theme])
-
-  const toggle = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'))
+    return next
+  })
 
   return (
     <button
